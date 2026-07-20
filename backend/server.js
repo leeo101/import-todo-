@@ -18,7 +18,7 @@ app.use(express.json());
 // Log API Key Setup States
 const stripeSet = process.env.STRIPE_SECRET_KEY && !process.env.STRIPE_SECRET_KEY.includes('your_secret_key');
 const amazonSet = process.env.AMAZON_ASSOCIATE_TAG && !process.env.AMAZON_ASSOCIATE_TAG.includes('your_amazon');
-const alibabaSet = process.env.ALIBABA_API_KEY && !process.env.ALIBABA_API_KEY.includes('your_alibaba');
+const alibabaSet = (process.env.ALIBABA_API_KEY && !process.env.ALIBABA_API_KEY.includes('your_alibaba')) || (process.env.ALIEXPRESS_API_KEY && !process.env.ALIEXPRESS_API_KEY.includes('your_aliexpress'));
 const mercadopagoSet = process.env.MERCADOPAGO_ACCESS_TOKEN && !process.env.MERCADOPAGO_ACCESS_TOKEN.includes('your_token');
 
 console.log("=================================================");

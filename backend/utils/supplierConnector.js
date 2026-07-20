@@ -800,17 +800,17 @@ const translateToEnglish = (query) => {
 
 // 2. Search products on AliExpress Dropshipping Center (Live if RapidAPI key set, otherwise simulated)
 const searchAliExpress = async (query) => {
-  const apiKey = process.env.RAPIDAPI_KEY;
+  const apiKey = process.env.ALIEXPRESS_API_KEY || process.env.ALIEXPRESS_APP_KEY || process.env.RAPIDAPI_KEY;
   const host = 'aliexpress-datahub.p.rapidapi.com';
 
   if (!apiKey || apiKey.includes('tu_clave_de_rapidapi') || apiKey === '') {
-    console.log(`[ALIEXPRESS SIMULATION] No se detectó clave de RapidAPI. Cargando simulación.`);
+    console.log(`[ALIEXPRESS SIMULATION] No se detectó clave de AliExpress API. Cargando simulación.`);
     return getAliExpressMockData(query);
   }
 
   try {
     const translatedQuery = translateToEnglish(query);
-    console.log(`[ALIEXPRESS LIVE API] Buscando en AliExpress (RapidAPI - DataHub): ${translatedQuery} (Original: ${query})`);
+    console.log(`[ALIEXPRESS LIVE API] Buscando en AliExpress (API Key Activa: ${apiKey.substring(0, 8)}...): ${translatedQuery} (Original: ${query})`);
     const targetUrl = `https://${host}/item_search_4?q=${encodeURIComponent(translatedQuery)}&page=1`;
     const data = await rapidApiGetJSON(targetUrl, host, apiKey);
 
