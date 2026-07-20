@@ -21,6 +21,8 @@ const amazonSet = process.env.AMAZON_ASSOCIATE_TAG && !process.env.AMAZON_ASSOCI
 const alibabaSet = (process.env.ALIBABA_API_KEY && !process.env.ALIBABA_API_KEY.includes('your_alibaba')) || (process.env.ALIEXPRESS_API_KEY && !process.env.ALIEXPRESS_API_KEY.includes('your_aliexpress'));
 const mercadopagoSet = process.env.MERCADOPAGO_ACCESS_TOKEN && !process.env.MERCADOPAGO_ACCESS_TOKEN.includes('your_token');
 
+const banggoodSet = process.env.BANGGOOD_APP_KEY && !process.env.BANGGOOD_APP_KEY.includes('tu_clave');
+
 console.log("=================================================");
 console.log("           IMPORTTODO BACKEND BOOTLOG            ");
 console.log("=================================================");
@@ -28,7 +30,8 @@ console.log(`Motor de Base de Datos:      SQLITE (utiltech.db activo)`);
 console.log(`Pasarela de Mercado Pago:    ${mercadopagoSet ? 'CONECTADO (Sandbox/Producción real)' : 'MODO SIMULACIÓN (Sandbox predeterminado)'}`);
 console.log(`Pasarela de Pago (Stripe):   ${stripeSet ? 'CONECTADO (Producción/Pruebas real)' : 'MODO SIMULACIÓN (Sandbox)'}`);
 console.log(`Amazon Affiliate Engine:     ${amazonSet ? 'ACTIVO' : 'MODO SIMULACIÓN'}`);
-console.log(`Alibaba/AliExpress API:      ${alibabaSet ? 'CONECTADO' : 'MODO SIMULACIÓN'}`);
+console.log(`AliExpress API Oficial:      ${alibabaSet ? 'CONECTADO (AppKey 540142)' : 'MODO SIMULACIÓN'}`);
+console.log(`Banggood API Oficial:        ${banggoodSet ? 'CONECTADO (AppKey aff6a5e6558c57b)' : 'MODO SIMULACIÓN'}`);
 console.log("=================================================");
 
 // Free translation utility using Google Translate's public API endpoint
