@@ -20,7 +20,13 @@ const Navbar = ({
   const { isDarkMode, toggleTheme } = useContext(ThemeContext);
 
   return (
-    <nav className="navbar">
+    <>
+      {/* 🔔 TOP ANNOUNCEMENT BANNER */}
+      <div style={{ background: 'linear-gradient(90deg, #0284c7, #06b6d4, #2563eb)', color: '#fff', fontSize: '0.78rem', fontWeight: 'bold', padding: '0.4rem 1rem', textAlign: 'center', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem', letterSpacing: '0.03em', boxShadow: '0 2px 10px rgba(0,0,0,0.2)' }}>
+        <span>🚀 Envíos Directos Internacionales al Costo • Dólar Tarjeta $1.450 • Cupón Especial: <u style={{ color: '#fef08a' }}>IMPORT10</u> (10% OFF)</span>
+      </div>
+
+      <nav className="navbar">
       <div className="container nav-container">
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
           <button 
@@ -96,6 +102,7 @@ const Navbar = ({
         </div>
       </div>
     </nav>
+    </>
   );
 };
 

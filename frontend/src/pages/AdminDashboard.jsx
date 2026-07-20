@@ -496,6 +496,20 @@ const AdminDashboard = ({
                               Procesar Envío
                             </button>
 
+                            {/* 📱 BOTÓN DE NOTIFICACIÓN AUTOMÁTICA POR WHATSAPP */}
+                            <button 
+                              style={{ padding: '0.35rem 0.7rem', fontSize: '0.75rem', background: 'rgba(34, 197, 94, 0.15)', border: '1px solid rgba(34, 197, 94, 0.3)', color: '#22c55e', borderRadius: '6px', width: '100%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem', fontWeight: 'bold' }}
+                              onClick={() => {
+                                const name = order.shippingAddress?.fullName || 'Cliente';
+                                const phone = (order.shippingAddress?.phone || '').replace(/[^0-9]/g, '');
+                                const tracking = order.trackingNumber || 'AR-PROCESANDO';
+                                const msg = encodeURIComponent(`¡Hola ${name}! Te contactamos de ImportTodo. Tu pedido #${order.id} está en estado: *${order.status}*. Código de seguimiento internacional: *${tracking}*. ¡Gracias por confiar en nosotros! 🚀`);
+                                window.open(`https://wa.me/${phone}?text=${msg}`, '_blank');
+                              }}
+                            >
+                              📱 WhatsApp
+                            </button>
+
                             {handleDeleteOrder && (
                               <button 
                                 style={{ padding: '0.35rem 0.7rem', fontSize: '0.75rem', background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', color: 'var(--error)', borderRadius: '6px', width: '100%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem', fontWeight: 'bold' }}

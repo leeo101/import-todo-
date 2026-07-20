@@ -1,5 +1,5 @@
-import React from 'react';
-import { ArrowLeft, ChevronRight, Star, ShoppingBag, Scale, Maximize2, Info } from 'lucide-react';
+import React, { useState } from 'react';
+import { ArrowLeft, ChevronRight, Star, ShoppingBag, Scale, Maximize2, Info, Truck, ShieldCheck, Send, CheckCircle2 } from 'lucide-react';
 import ProductCard from '../components/ProductCard';
 
 const ProductDetail = ({
@@ -9,10 +9,44 @@ const ProductDetail = ({
   setActiveImageIndex,
   addToCart,
   buyNow,
-  MOCK_REVIEWS,
+  MOCK_REVIEWS = [],
   relatedProducts,
   navigateToDetail
 }) => {
+  const [reviewsList, setReviewsList] = useState(MOCK_REVIEWS);
+  const [userRating, setUserRating] = useState(5);
+  const [userNameInput, setUserNameInput] = useState('');
+  const [userCommentInput, setUserCommentInput] = useState('');
+  const [reviewSuccess, setReviewSuccess] = useState(false);
+
+  // Dynamic customs & shipping calculation
+  const supplierName = selectedProductDetail.supplierName || 'Proveedor Internacional';
+  const shippingCostUSD = selectedProductDetail.shippingCostUSD !== undefined ? selectedProductDetail.shippingCostUSD : 0.0;
+  const deliveryDays = selectedProductDetail.deliveryDays || 14;
+  const originalUSD = selectedProductDetail.originalPrice || (selectedProductDetail.salePrice / 1450);
+
+  // AFIP/ARCA Customs rule: 50% duty above $50 USD for individual shipments, or $0 if free threshold
+  const estimatedCustomsUSD = originalUSD > 50 ? Number(((originalUSD - 50) * 0.5).toFixed(2)) : 0.00;
+  const totalLandedUSD = Number((originalUSD + shippingCostUSD + estimatedCustomsUSD).toFixed(2));
+
+  const handleAddReview = (e) => {
+    e.preventDefault();
+    if (!userNameInput.trim() || !userCommentInput.trim()) return;
+
+    const newRev = {
+      name: userNameInput.trim(),
+      date: 'Hoy',
+      rating: userRating,
+      comment: userCommentInput.trim()
+    };
+
+    setReviewsList([newRev, ...reviewsList]);
+    setUserNameInput('');
+    setUserCommentInput('');
+    setReviewSuccess(true);
+    setTimeout(() => setReviewSuccess(false), 4000);
+  };
+
   return (
     <main className="container" style={{ paddingTop: '2.5rem', minHeight: '80vh' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '2rem', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
@@ -78,14 +112,14 @@ const ProductDetail = ({
               );
             })()}
             <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textAlign: 'center' }}>
-              *Imágenes reales del proveedor. Selecciona las miniaturas para inspeccionar el producto.
+              *Imágenes reales de {supplierName}. Selecciona las miniaturas para inspeccionar el producto.
             </span>
           </div>
 
           <div style={{ flex: '1.5 1.5 450px', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
             <div>
               <span style={{ fontSize: '0.8rem', textTransform: 'uppercase', color: 'var(--accent-cyan)', fontWeight: 'bold', letterSpacing: '0.05em' }}>
-                {selectedProductDetail.category}
+                {selectedProductDetail.category} • Proveedor: {supplierName}
               </span>
               <h1 style={{ fontSize: '2.4rem', fontWeight: 'bold', color: 'var(--text-main)', marginTop: '0.5rem', marginBottom: '0.75rem', lineHeight: '1.2' }}>
                 {selectedProductDetail.title}
@@ -94,17 +128,17 @@ const ProductDetail = ({
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', color: 'var(--warning)', margin: '0.75rem 0' }}>
                 <Star size={18} fill="currentColor" /><Star size={18} fill="currentColor" /><Star size={18} fill="currentColor" /><Star size={18} fill="currentColor" /><Star size={18} fill="currentColor" opacity="0.4" />
                 <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginLeft: '0.5rem', fontWeight: '600' }}>
-                  ★ {selectedProductDetail.utilityScore} / 10 en índice de calidad de fábrica
+                  ★ {selectedProductDetail.utilityScore || 9.2} / 10 • {reviewsList.length} Opiniones de compradores
                 </span>
               </div>
             </div>
 
             <div style={{ background: 'linear-gradient(135deg, var(--bg-card), rgba(6,182,212,0.02))', border: '1px solid var(--border-glow)', borderRadius: '16px', padding: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1.5rem', boxShadow: '0 8px 32px rgba(0,0,0,0.3)' }}>
               <div>
-                <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Precio Oferta Especial</span>
+                <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Precio Final en Tu Puerta</span>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem', marginTop: '0.25rem' }}>
                   <span style={{ fontSize: '2.5rem', fontWeight: 'bold', color: 'var(--text-main)', fontFamily: 'Outfit' }}>{new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 0 }).format(selectedProductDetail.salePrice)}</span>
-                  <span style={{ color: 'var(--success)', fontSize: '0.85rem', fontWeight: 'bold' }}>Envío Directo</span>
+                  <span style={{ color: 'var(--success)', fontSize: '0.85rem', fontWeight: 'bold' }}>Envío Puerta a Puerta</span>
                 </div>
                 <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
                   Unidades disponibles: <span style={{ color: 'var(--text-main)', fontWeight: 'bold' }}>{selectedProductDetail.stock} unidades</span>
@@ -138,6 +172,35 @@ const ProductDetail = ({
               </div>
             </div>
 
+            {/* --- 🛃 CALCULADORA DE COSTOS & ENVIOS AL COSTO --- */}
+            <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-light)', borderRadius: '14px', padding: '1.25rem' }}>
+              <h4 style={{ fontSize: '0.95rem', fontWeight: 'bold', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
+                <Truck size={18} style={{ color: 'var(--accent-cyan)' }} /> Desglose de Envío & Aduana ({supplierName})
+              </h4>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '1rem', fontSize: '0.85rem' }}>
+                <div>
+                  <span style={{ color: 'var(--text-muted)', display: 'block', marginBottom: '0.2rem' }}>Costo Fábrica Original</span>
+                  <span style={{ fontWeight: 'bold', color: 'var(--text-main)' }}>USD ${originalUSD.toFixed(2)}</span>
+                </div>
+                <div>
+                  <span style={{ color: 'var(--text-muted)', display: 'block', marginBottom: '0.2rem' }}>Flete Internacional ({supplierName})</span>
+                  <span style={{ fontWeight: 'bold', color: shippingCostUSD === 0 ? 'var(--success)' : 'var(--text-main)' }}>
+                    {shippingCostUSD === 0 ? 'GRATIS 🚚' : `USD $${shippingCostUSD.toFixed(2)}`}
+                  </span>
+                </div>
+                <div>
+                  <span style={{ color: 'var(--text-muted)', display: 'block', marginBottom: '0.2rem' }}>Tasa Aduana Estimada (AFIP/ARCA)</span>
+                  <span style={{ fontWeight: 'bold', color: estimatedCustomsUSD === 0 ? 'var(--success)' : 'var(--warning)' }}>
+                    {estimatedCustomsUSD === 0 ? 'Sin Cargo ($0)' : `USD $${estimatedCustomsUSD.toFixed(2)}`}
+                  </span>
+                </div>
+                <div>
+                  <span style={{ color: 'var(--text-muted)', display: 'block', marginBottom: '0.2rem' }}>Tiempo Estimado Entrega</span>
+                  <span style={{ fontWeight: 'bold', color: 'var(--accent-cyan)' }}>{deliveryDays} a {deliveryDays + 5} días hábiles</span>
+                </div>
+              </div>
+            </div>
+
             <div>
               <h3 style={{ fontSize: '1.15rem', color: 'var(--text-main)', marginBottom: '0.5rem', fontWeight: '600' }}>Descripción del Artículo</h3>
               <p style={{ fontSize: '1rem', color: 'var(--text-muted)', lineHeight: '1.6', whiteSpace: 'pre-line' }}>
@@ -163,7 +226,7 @@ const ProductDetail = ({
                 <div>
                   <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Origen de Despacho</span>
                   <div style={{ fontWeight: 'bold', marginTop: '0.25rem', fontSize: '0.95rem' }}>
-                    Supplier Direct Import
+                    {supplierName} Official Direct Import
                   </div>
                 </div>
                 <div>
@@ -174,23 +237,73 @@ const ProductDetail = ({
                 </div>
               </div>
             </div>
-
-            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', background: 'rgba(245,158,11,0.04)', border: '1px solid rgba(245,158,11,0.15)', padding: '1rem', borderRadius: '10px' }}>
-              <Info size={20} style={{ color: 'var(--warning)', flexShrink: 0, marginTop: '0.1rem' }} />
-              <div>
-                <h4 style={{ color: 'var(--warning)', fontSize: '0.9rem', fontWeight: 'bold', marginBottom: '0.2rem' }}>Información de Envío Directo de Fábrica</h4>
-                <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', lineHeight: '1.4' }}>
-                  Este artículo se despacha directo de fábrica. El tiempo estimado de entrega en domicilio es de **10 a 20 días hábiles** desde la confirmación de la orden. Contamos con seguro internacional contra pérdidas y roturas.
-                </p>
-              </div>
-            </div>
           </div>
         </div>
 
+        {/* --- ⭐ SECCIÓN DE RESEÑAS E INTERACCIÓN --- */}
         <div style={{ borderTop: '1px solid var(--border-light)', paddingTop: '2.5rem', marginTop: '1rem' }}>
-          <h3 style={{ fontSize: '1.3rem', color: 'var(--text-main)', marginBottom: '1.5rem', fontWeight: 'bold' }}>Opiniones y Valoraciones de Clientes</h3>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.5rem' }}>
+            <h3 style={{ fontSize: '1.3rem', color: 'var(--text-main)', fontWeight: 'bold' }}>Opiniones y Valoraciones de Clientes ({reviewsList.length})</h3>
+            <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>Garantía de compra 100% verificado</span>
+          </div>
+
+          {/* Formulario de Nueva Reseña */}
+          <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-light)', borderRadius: '14px', padding: '1.5rem', marginBottom: '2rem' }}>
+            <h4 style={{ fontSize: '1rem', fontWeight: 'bold', color: 'var(--text-main)', marginBottom: '1rem' }}>Deja tu Opinión sobre este Producto</h4>
+            
+            {reviewSuccess && (
+              <div style={{ background: 'rgba(16, 185, 129, 0.15)', border: '1px solid var(--success)', color: 'var(--success)', padding: '0.75rem 1rem', borderRadius: '8px', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem' }}>
+                <CheckCircle2 size={18} /> ¡Gracias por tu opinión! Tu reseña ha sido publicada.
+              </div>
+            )}
+
+            <form onSubmit={handleAddReview} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                <input 
+                  type="text" 
+                  placeholder="Tu Nombre (ej. Carlos M.)" 
+                  value={userNameInput}
+                  onChange={e => setUserNameInput(e.target.value)}
+                  style={{ flex: '1 1 200px', background: 'var(--bg-main)', border: '1px solid var(--border-light)', color: 'var(--text-main)', padding: '0.75rem 1rem', borderRadius: '8px', outline: 'none' }}
+                  required
+                />
+                
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'var(--bg-main)', border: '1px solid var(--border-light)', padding: '0.5rem 1rem', borderRadius: '8px' }}>
+                  <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Calificación:</span>
+                  {[1, 2, 3, 4, 5].map(starVal => (
+                    <Star 
+                      key={starVal} 
+                      size={18} 
+                      fill={starVal <= userRating ? 'var(--warning)' : 'none'} 
+                      stroke={starVal <= userRating ? 'var(--warning)' : 'var(--text-muted)'}
+                      style={{ cursor: 'pointer' }}
+                      onClick={() => setUserRating(starVal)}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              <textarea 
+                placeholder="Escribe tu opinión sobre la calidad, el tiempo de entrega y el empaque del producto..." 
+                rows="3"
+                value={userCommentInput}
+                onChange={e => setUserCommentInput(e.target.value)}
+                style={{ background: 'var(--bg-main)', border: '1px solid var(--border-light)', color: 'var(--text-main)', padding: '0.75rem 1rem', borderRadius: '8px', outline: 'none', resize: 'vertical' }}
+                required
+              />
+
+              <button 
+                type="submit" 
+                className="add-to-cart-btn"
+                style={{ width: 'fit-content', padding: '0.75rem 1.5rem', borderRadius: '8px', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+              >
+                <Send size={16} /> Publicar Reseña
+              </button>
+            </form>
+          </div>
+
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem' }}>
-            {MOCK_REVIEWS.map((rev, idx) => (
+            {reviewsList.map((rev, idx) => (
               <div key={idx} style={{ background: 'var(--bg-card)', border: '1px solid var(--border-light)', padding: '1.25rem', borderRadius: '12px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
                   <span style={{ fontWeight: 'bold', fontSize: '0.95rem' }}>{rev.name}</span>

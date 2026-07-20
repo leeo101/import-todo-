@@ -21,6 +21,9 @@ const Checkout = ({
 }) => {
   const [paymentMethod, setPaymentMethod] = useState('Mercado Pago');
   const [isSimulatingPayment, setIsSimulatingPayment] = useState(false);
+  const [couponCode, setCouponCode] = useState('');
+  const [discountPercent, setDiscountPercent] = useState(0);
+  const [couponMessage, setCouponMessage] = useState('');
 
   if (!isCheckoutOpen) return null;
 
@@ -272,11 +275,57 @@ const Checkout = ({
                 </div>
               </div>
 
+              {/* Coupon Code Input */}
+              <div style={{ marginBottom: '1.5rem', background: 'var(--bg-main)', border: '1px solid var(--border-light)', borderRadius: '12px', padding: '1rem' }}>
+                <label style={{ fontSize: '0.85rem', fontWeight: 'bold', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '0.3rem', marginBottom: '0.5rem' }}>
+                  🏷️ ¿Tienes un Cupón de Descuento?
+                </label>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <input 
+                    type="text"
+                    placeholder="Ej. IMPORT10, BIENVENIDA"
+                    value={couponCode}
+                    onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                    style={{ flex: 1, background: 'var(--bg-card)', border: '1px solid var(--border-light)', color: 'var(--text-main)', padding: '0.6rem 0.8rem', borderRadius: '8px', outline: 'none', textTransform: 'uppercase' }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const code = couponCode.trim();
+                      if (code === 'IMPORT10' || code === 'IMPORT2026') {
+                        setDiscountPercent(10);
+                        setCouponMessage('¡Cupón IMPORT10 Aplicado! (10% OFF)');
+                      } else if (code === 'BIENVENIDA') {
+                        setDiscountPercent(15);
+                        setCouponMessage('¡Cupón BIENVENIDA Aplicado! (15% OFF)');
+                      } else {
+                        setCouponMessage('Cupón no válido o vencido.');
+                        setDiscountPercent(0);
+                      }
+                    }}
+                    style={{ background: 'var(--accent-cyan)', color: '#000', border: 'none', padding: '0.6rem 1rem', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}
+                  >
+                    Aplicar
+                  </button>
+                </div>
+                {couponMessage && (
+                  <div style={{ fontSize: '0.8rem', marginTop: '0.4rem', color: discountPercent > 0 ? 'var(--success)' : 'var(--error)', fontWeight: '600' }}>
+                    {couponMessage}
+                  </div>
+                )}
+              </div>
+
               <div style={{ background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '12px', border: '1px solid var(--border-light)', marginBottom: '1.5rem' }}>
+                {discountPercent > 0 && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', color: 'var(--success)', marginBottom: '0.5rem' }}>
+                    <span>Descuento Aplicado ({discountPercent}% OFF):</span>
+                    <span>-{new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 0 }).format((cartTotal * discountPercent) / 100)}</span>
+                  </div>
+                )}
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: '1.1rem' }}>
                   <span>Monto Total a Pagar:</span>
                   <span style={{ color: 'var(--success)' }}>
-                    {new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 0 }).format(cartTotal)}
+                    {new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 0 }).format(cartTotal * (1 - discountPercent / 100))}
                   </span>
                 </div>
               </div>
