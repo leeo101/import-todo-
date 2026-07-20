@@ -962,8 +962,6 @@ const searchAliExpress = async (query) => {
   console.log(`[ALIEXPRESS SIMULATION] Cargando catálogo dinámico de AliExpress.`);
   return getAliExpressMockData(query);
 };
-  }
-};
 
 // 3. Search products on Amazon Product Advertising API (PA-API) (Live if RapidAPI key set, otherwise simulated)
 const searchAmazon = async (query) => {
