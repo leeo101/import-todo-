@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100%" height="100%">
+        <defs>
+            <linearGradient id="yellowGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#fbbf24"/>
+                <stop offset="100%" stop-color="#d97706"/>
+            </linearGradient>
+        </defs>
+        <rect width="100" height="100" rx="15" fill="#1e293b"/>
+        <!-- Rays -->
+        <line x1="50" y1="20" x2="50" y2="10" stroke="#fbbf24" stroke-width="3" stroke-linecap="round"/>
+        <line x1="25" y1="45" x2="15" y2="45" stroke="#fbbf24" stroke-width="3" stroke-linecap="round"/>
+        <line x1="75" y1="45" x2="85" y2="45" stroke="#fbbf24" stroke-width="3" stroke-linecap="round"/>
+        <line x1="32" y1="27" x2="25" y2="20" stroke="#fbbf24" stroke-width="3" stroke-linecap="round"/>
+        <line x1="68" y1="27" x2="75" y2="20" stroke="#fbbf24" stroke-width="3" stroke-linecap="round"/>
+        <!-- LED Light Bar / Bulb -->
+        <rect x="25" y="45" width="50" height="16" rx="8" fill="url(#yellowGrad)"/>
+        <rect x="35" y="61" width="30" height="12" fill="#94a3b8" rx="2"/>
+        <!-- Sensor cap -->
+        <circle cx="50" cy="53" r="5" fill="#ffffff" stroke="#94a3b8" stroke-width="1"/>
+    </svg>

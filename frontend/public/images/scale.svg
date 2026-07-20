@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100%" height="100%">
+        <rect width="100" height="100" rx="15" fill="#1e293b"/>
+        <!-- Scale Platform -->
+        <rect x="20" y="25" width="60" height="55" rx="6" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="2"/>
+        <rect x="22" y="27" width="56" height="15" fill="#cbd5e1" rx="4"/>
+        <!-- Display -->
+        <rect x="35" y="32" width="30" height="8" rx="2" fill="#000000"/>
+        <text x="50" y="39" fill="#00ff00" font-family="monospace" font-size="7" text-anchor="middle">0.00 kg</text>
+        <!-- Glass Accent -->
+        <path d="M 24 29 L 76 29" stroke="#ffffff" stroke-width="2" opacity="0.8"/>
+    </svg>

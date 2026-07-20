@@ -1,0 +1,28 @@
+[
+  {
+    "id": "usr_1",
+    "name": "Administrador Demo",
+    "email": "admin@utiltech.com",
+    "password": "8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918",
+    "dni": "99888777",
+    "phone": "1199998888",
+    "address": "Av. Corrientes 1234",
+    "apartment": "Piso 5 B",
+    "zipCode": "1043",
+    "city": "CABA",
+    "province": "Buenos Aires"
+  },
+  {
+    "id": "usr_2",
+    "name": "Juan Perez",
+    "email": "juan@email.com",
+    "password": "5b722b307fce6c94490527fa16b120cfd7d4127da52b412920224d2ef0c274b8",
+    "dni": "33444555",
+    "phone": "3513334455",
+    "address": "Av. Colon 450",
+    "apartment": "Dpto 2A",
+    "zipCode": "5000",
+    "city": "Córdoba",
+    "province": "Córdoba"
+  }
+]

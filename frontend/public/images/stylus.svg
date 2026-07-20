@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100%" height="100%">
+        <rect width="100" height="100" rx="15" fill="#1e293b"/>
+        <!-- Pencil -->
+        <path d="M 75 25 L 35 65 L 30 70 L 35 65 L 30 70 L 25 75 L 32 72 L 35 65 Z" fill="#94a3b8"/>
+        <!-- Tip -->
+        <path d="M 25 75 L 28 71 L 24 67 Z" fill="#3b82f6"/>
+        <!-- Drawing wave line -->
+        <path d="M 20 80 Q 40 75 60 82 T 90 75" fill="none" stroke="#3b82f6" stroke-width="3" stroke-linecap="round"/>
+    </svg>

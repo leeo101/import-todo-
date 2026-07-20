@@ -1,0 +1,21 @@
+{
+  "manifest_version": 3,
+  "name": "ImportTodo Dropshipping Helper",
+  "version": "1.0",
+  "description": "Autocompleta los datos de envío de tus clientes de ImportTodo en AliExpress y Amazon de forma automática.",
+  "permissions": ["activeTab"],
+  "content_scripts": [
+    {
+      "matches": [
+        "*://*.aliexpress.com/*",
+        "*://*.aliexpress.com.ar/*",
+        "*://*.aliexpress.us/*",
+        "*://*.aliexpress.ru/*",
+        "*://*.amazon.com/*",
+        "*://*.amazon.com.ar/*"
+      ],
+      "js": ["content.js"],
+      "run_at": "document_end"
+    }
+  ]
+}
