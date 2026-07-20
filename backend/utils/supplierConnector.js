@@ -815,36 +815,47 @@ const generateTopSign = (params, appSecret) => {
 
 // 2. Search products on AliExpress Dropshipping Center (Live if Official TOP API or RapidAPI key set)
 const searchAliExpress = async (query) => {
-  const appKey = process.env.ALIEXPRESS_APP_KEY || process.env.ALIEXPRESS_API_KEY || 'rSpFw9CdwltP9rZiNC6aubJ38oJb1GA5';
-  const appSecret = process.env.ALIEXPRESS_APP_SECRET || process.env.ALIEXPRESS_SECRET_KEY || '';
+  const appKey = process.env.ALIEXPRESS_APP_KEY || process.env.ALIEXPRESS_API_KEY || '540142';
+  const appSecret = process.env.ALIEXPRESS_APP_SECRET || process.env.ALIEXPRESS_SECRET_KEY || 'rSpFw9CdwltP9rZiNC6aubJ38oJb1GA5';
   const rapidApiKey = process.env.RAPIDAPI_KEY;
 
-  // 1. Try official AliExpress Open Platform (TOP API) if App Secret is configured
+  // 1. Try official AliExpress Open Platform (TOP API) with authenticated signature
   if (appKey && appSecret && !appSecret.includes('tu_clave')) {
     try {
       const translatedQuery = translateToEnglish(query);
-      console.log(`[ALIEXPRESS OFFICIAL TOP API] Consultando API Oficial de AliExpress: ${translatedQuery}`);
+      console.log(`[ALIEXPRESS OFFICIAL TOP API] Consultando API Oficial (AppKey ${appKey}): ${translatedQuery}`);
       const timestamp = new Date().toISOString().replace('T', ' ').substring(0, 19);
       
-      const params = {
-        method: 'aliexpress.affiliate.product.query',
+      let params = {
+        method: 'aliexpress.ds.recommend.feed.get',
         app_key: appKey,
         sign_method: 'md5',
         timestamp: timestamp,
         format: 'json',
         v: '2.0',
-        keywords: translatedQuery,
+        feed_name: 'DS_RECOMMEND_FEED',
         target_currency: 'USD',
         target_language: 'ES',
-        page_size: '15',
-        tracking_id: process.env.ALIEXPRESS_TRACKING_ID || 'importtodo_aff'
+        page_size: '15'
       };
       
       params.sign = generateTopSign(params, appSecret);
-      const searchParams = new URLSearchParams(params).toString();
-      const targetUrl = `https://api-sg.aliexpress.com/sync?${searchParams}`;
+      let searchParams = new URLSearchParams(params).toString();
+      let targetUrl = `https://api-sg.aliexpress.com/sync?${searchParams}`;
       
-      const response = await httpsGetJSON(targetUrl);
+      let response = await httpsGetJSON(targetUrl);
+      
+      // Fallback method if feed is empty
+      if (!response || !response.aliexpress_ds_recommend_feed_get_response || !response.aliexpress_ds_recommend_feed_get_response.result) {
+        params.method = 'aliexpress.affiliate.product.query';
+        delete params.feed_name;
+        params.keywords = translatedQuery;
+        params.sign = generateTopSign(params, appSecret);
+        searchParams = new URLSearchParams(params).toString();
+        targetUrl = `https://api-sg.aliexpress.com/sync?${searchParams}`;
+        response = await httpsGetJSON(targetUrl);
+      }
+
       if (response && response.aliexpress_affiliate_product_query_response && response.aliexpress_affiliate_product_query_response.resp_result) {
         const result = response.aliexpress_affiliate_product_query_response.resp_result;
         if (result.result && result.result.products && result.result.products.product) {
