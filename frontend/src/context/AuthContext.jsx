@@ -34,7 +34,8 @@ export const AuthProvider = ({ children }) => {
     if (savedUser) {
       try {
         const user = JSON.parse(savedUser);
-        setLoggedInUser(user);
+        const isAdmin = user.email?.toLowerCase() === 'enzorodriguez31@gmail.com' || user.role === 'admin' || user.isAdmin === true;
+        setLoggedInUser({ ...user, isAdmin, role: isAdmin ? 'admin' : 'user' });
       } catch (e) {
         console.error(e);
       }
@@ -42,8 +43,10 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const loginUser = (user) => {
-    setLoggedInUser(user);
-    localStorage.setItem('utiltech_user', JSON.stringify(user));
+    const isAdmin = user.email?.toLowerCase() === 'enzorodriguez31@gmail.com' || user.role === 'admin' || user.isAdmin === true;
+    const fullUser = { ...user, isAdmin, role: isAdmin ? 'admin' : 'user' };
+    setLoggedInUser(fullUser);
+    localStorage.setItem('utiltech_user', JSON.stringify(fullUser));
     
     setAuthModalOpen(false);
     setAuthEmail('');
@@ -67,8 +70,10 @@ export const AuthProvider = ({ children }) => {
   const updateUserProfile = (updatedFields) => {
     setLoggedInUser(prev => {
       const newUser = { ...prev, ...updatedFields };
-      localStorage.setItem('utiltech_user', JSON.stringify(newUser));
-      return newUser;
+      const isAdmin = newUser.email?.toLowerCase() === 'enzorodriguez31@gmail.com' || newUser.role === 'admin' || newUser.isAdmin === true;
+      const fullUser = { ...newUser, isAdmin, role: isAdmin ? 'admin' : 'user' };
+      localStorage.setItem('utiltech_user', JSON.stringify(fullUser));
+      return fullUser;
     });
   };
 
@@ -83,11 +88,13 @@ export const AuthProvider = ({ children }) => {
       }
 
       if (!backendOnline) {
-        if (authEmail === 'admin@utiltech.com' && authPassword === 'admin') {
+        if (authEmail.toLowerCase() === 'enzorodriguez31@gmail.com' && authPassword === 'EnzoRodriguez10@') {
           const mockUser = { 
             id: 'usr_1', 
-            name: 'Administrador Demo', 
+            name: 'Enzo Rodríguez', 
             email: authEmail, 
+            role: 'admin',
+            isAdmin: true,
             dni: '99888777',
             phone: '1199998888',
             address: 'Av. Corrientes 1234',
@@ -98,7 +105,7 @@ export const AuthProvider = ({ children }) => {
           };
           loginUser(mockUser);
         } else {
-          setAuthError('Error: Servidor backend offline. Usa admin@utiltech.com / admin.');
+          setAuthError('Error: Servidor backend offline. Usa enzorodriguez31@gmail.com / EnzoRodriguez10@.');
         }
         return;
       }

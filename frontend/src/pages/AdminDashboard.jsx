@@ -42,6 +42,8 @@ const AdminDashboard = ({
   setNewProdDimensions,
   newProdImage,
   setNewProdImage,
+  newProdImages = [],
+  setNewProdImages,
   newProdDesc,
   setNewProdDesc,
   orders,
@@ -376,7 +378,7 @@ const AdminDashboard = ({
               </div>
 
               <div className="form-group">
-                <label className="form-label">Imagen URL</label>
+                <label className="form-label">Imagen Principal URL</label>
                 <input 
                   type="text" 
                   className="form-input" 
@@ -384,6 +386,45 @@ const AdminDashboard = ({
                   onChange={(e) => setNewProdImage(e.target.value)}
                 />
               </div>
+
+              {/* HD Photo Gallery Preview */}
+              {newProdImages && newProdImages.length > 0 && (
+                <div style={{ marginBottom: '1.25rem', background: 'rgba(6, 182, 212, 0.05)', padding: '0.85rem', borderRadius: '10px', border: '1px dashed var(--border-glow)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--accent-cyan)', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                      📸 Galería de Fotos Auto-completadas ({newProdImages.length} fotos HD):
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', paddingBottom: '0.4rem', scrollbarWidth: 'thin' }}>
+                    {newProdImages.map((imgUrl, idx) => (
+                      <div 
+                        key={idx} 
+                        style={{ 
+                          position: 'relative', 
+                          flexShrink: 0, 
+                          border: newProdImage === imgUrl ? '2px solid var(--accent-cyan)' : '1px solid var(--border-light)', 
+                          borderRadius: '8px', 
+                          padding: '3px', 
+                          background: '#ffffff',
+                          cursor: 'pointer',
+                          boxShadow: newProdImage === imgUrl ? '0 0 10px rgba(6, 182, 212, 0.5)' : 'none',
+                          transition: 'all 0.2s ease'
+                        }}
+                        onClick={() => setNewProdImage(imgUrl)}
+                        title="Haz click para definir como foto de portada"
+                      >
+                        <img src={imgUrl} alt={`Foto ${idx+1}`} style={{ width: '52px', height: '52px', objectFit: 'contain' }} />
+                        {newProdImage === imgUrl && (
+                          <span style={{ position: 'absolute', top: '-6px', right: '-6px', background: 'var(--accent-cyan)', color: '#000', borderRadius: '50%', width: '18px', height: '18px', fontSize: '11px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>✓</span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                  <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'block', marginTop: '0.3rem' }}>
+                    💡 Haz click en cualquier foto para elegirla como portada. Todas las fotos cargadas se guardarán automáticamente en la galería del producto.
+                  </span>
+                </div>
+              )}
 
               <div className="form-group">
                 <label className="form-label">Descripción</label>

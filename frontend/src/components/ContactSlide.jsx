@@ -121,16 +121,18 @@ const ContactSlide = ({
                 <ChevronRight size={18} color="var(--text-muted)" />
               </button>
 
-              <button 
-                onClick={() => navigateTo('admin')}
-                className="sidebar-item"
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
-                  <Settings size={20} color="var(--accent-cyan)" />
-                  <span>Configuración de la Página</span>
-                </div>
-                <ChevronRight size={18} color="var(--text-muted)" />
-              </button>
+              {(loggedInUser.isAdmin || loggedInUser.role === 'admin' || loggedInUser.email?.toLowerCase() === 'enzorodriguez31@gmail.com') && (
+                <button 
+                  onClick={() => navigateTo('admin')}
+                  className="sidebar-item"
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+                    <Settings size={20} color="var(--accent-cyan)" />
+                    <span>Panel de Control (Admin)</span>
+                  </div>
+                  <ChevronRight size={18} color="var(--text-muted)" />
+                </button>
+              )}
             </>
           )}
 

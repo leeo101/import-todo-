@@ -1,5 +1,7 @@
 const express = require('express');
 const cors = require('cors');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 const crypto = require('crypto');
 const https = require('https');
 require('dotenv').config();
@@ -12,8 +14,21 @@ const { MercadoPagoConfig, Preference } = require('mercadopago');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// Apply Helmet security headers & CORS
+app.use(helmet({ contentSecurityPolicy: false }));
 app.use(cors());
 app.use(express.json());
+
+// Rate Limiting for Authentication Endpoints (prevents brute-force)
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 15, // Limit each IP to 15 auth attempts per 15 minutes
+  message: { error: 'Demasiados intentos de autenticación. Por favor reintenta en 15 minutos.' },
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
+app.use('/api/auth/', authLimiter);
 
 // Log API Key Setup States
 const stripeSet = process.env.STRIPE_SECRET_KEY && !process.env.STRIPE_SECRET_KEY.includes('your_secret_key');
@@ -160,8 +175,10 @@ app.post('/api/auth/register', async (req, res) => {
       newUser.id, newUser.name, newUser.email, newUser.password, newUser.dni, newUser.phone, newUser.address, newUser.apartment, newUser.zipCode, newUser.city, newUser.province
     );
 
-    const { password: _, ...userResponse } = newUser;
-    res.status(201).json({ message: 'User registered successfully', user: userResponse });
+    const isAdmin = newUser.email.toLowerCase() === 'enzorodriguez31@gmail.com';
+    const userPayload = { ...userResponse, role: isAdmin ? 'admin' : 'user', isAdmin };
+
+    res.status(201).json({ message: 'User registered successfully', user: userPayload });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Failed to save user in SQLite database.' });
@@ -186,7 +203,10 @@ app.post('/api/auth/login', async (req, res) => {
     }
 
     const { password: _, ...userResponse } = user;
-    res.json({ message: 'Login successful', user: userResponse });
+    const isAdmin = user.email.toLowerCase() === 'enzorodriguez31@gmail.com' || user.role === 'admin';
+    const userPayload = { ...userResponse, role: isAdmin ? 'admin' : 'user', isAdmin };
+
+    res.json({ message: 'Login successful', user: userPayload });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Server database error during login.' });

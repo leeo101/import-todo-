@@ -226,6 +226,7 @@ function App() {
   const [newProdStock, setNewProdStock] = useState('50');
   const [newProdSupplier, setNewProdSupplier] = useState('');
   const [newProdImage, setNewProdImage] = useState('/images/default.svg');
+  const [newProdImages, setNewProdImages] = useState([]);
   const [newProdWeight, setNewProdWeight] = useState('250 g');
   const [newProdDimensions, setNewProdDimensions] = useState('15 x 10 x 5 cm');
   const [scrapingLink, setScrapingLink] = useState(false);
@@ -553,34 +554,134 @@ function App() {
     setUserOrders([]);
   };
 
-  // Scrape link function
+  // Scrape link function with full HD image gallery and live API detail extraction
   const handleAutoScrape = async () => {
-    if (!newProdSupplier) {
+    if (!newProdSupplier || !newProdSupplier.trim()) {
       showToast("Por favor pega primero la URL del proveedor en el campo correspondiente.");
       return;
     }
 
     setScrapingLink(true);
     try {
-      const response = await fetch(`${BACKEND_URL}/scrape-link`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: newProdSupplier })
-      });
+      const urlStr = newProdSupplier.trim();
+      let extractedTitle = '';
+      let extractedDesc = '';
+      let extractedCategory = 'Comestibles';
+      let extractedCost = '5.00';
+      let extractedStock = '50';
+      let extractedWeight = '300 g';
+      let extractedDimensions = '15 x 10 x 5 cm';
+      let extractedImages = [];
+      let mainImage = '/images/default.svg';
 
-      if (response.ok) {
-        const data = await response.json();
-        setNewProdTitle(data.title || '');
-        setNewProdDesc(data.description || '');
-        setNewProdCategory(data.category || 'Comestibles');
-        setNewProdCost(data.originalPrice ? data.originalPrice.toString() : '5.00');
-        setNewProdStock(data.stock ? data.stock.toString() : '50');
-        setNewProdImage(data.image || '/images/default.svg');
-        setNewProdWeight(data.weight || '300 g');
-        setNewProdDimensions(data.dimensions || '15 x 10 x 5 cm');
-        
-        showToast("¡Datos del proveedor auto-completados con éxito!");
+      // 1. Direct Mercado Libre client-side extraction for high-resolution images & details
+      const meliMatch = urlStr.match(/(MLA-?\d+)/i);
+      if (meliMatch || urlStr.includes('mercadolibre.')) {
+        try {
+          const rawId = meliMatch ? meliMatch[1].replace('-', '') : '';
+          if (rawId) {
+            console.log(`[CLIENT SCRAPE] Consultando API oficial de Mercado Libre para: ${rawId}`);
+            const itemRes = await fetch(`https://api.mercadolibre.com/items/${rawId}`);
+            if (itemRes.ok) {
+              const itemData = await itemRes.json();
+              extractedTitle = itemData.title || '';
+              extractedCategory = clientDetectCategory(itemData.title);
+              
+              if (itemData.pictures && itemData.pictures.length > 0) {
+                extractedImages = itemData.pictures.map(pic => {
+                  let u = pic.secure_url || pic.url;
+                  if (u.includes('-I.')) u = u.replace('-I.', '-O.');
+                  return u.replace('http://', 'https://');
+                });
+                mainImage = extractedImages[0];
+              }
+
+              if (itemData.price) {
+                const usdRate = settings.usdToArsRate || 1450;
+                extractedCost = Number((itemData.price / usdRate).toFixed(2)).toString();
+              }
+              if (itemData.available_quantity) {
+                extractedStock = itemData.available_quantity.toString();
+              }
+
+              if (itemData.attributes) {
+                let specText = "\n\nEspecificaciones Técnicas:\n";
+                itemData.attributes.forEach(attr => {
+                  if (attr.name && attr.value_name) {
+                    specText += `- ${attr.name}: ${attr.value_name}\n`;
+                  }
+                  if (attr.id === 'PACKAGE_WEIGHT' || attr.id === 'WEIGHT') extractedWeight = attr.value_name;
+                });
+                const hAttr = itemData.attributes.find(a => a.id === 'PACKAGE_HEIGHT');
+                const wAttr = itemData.attributes.find(a => a.id === 'PACKAGE_WIDTH');
+                const lAttr = itemData.attributes.find(a => a.id === 'PACKAGE_LENGTH');
+                if (hAttr?.value_name && wAttr?.value_name && lAttr?.value_name) {
+                  extractedDimensions = `${lAttr.value_name} x ${wAttr.value_name} x ${hAttr.value_name}`;
+                }
+                extractedDesc += specText;
+              }
+
+              // Fetch detailed text description
+              try {
+                const descRes = await fetch(`https://api.mercadolibre.com/items/${rawId}/description`);
+                if (descRes.ok) {
+                  const descData = await descRes.json();
+                  const plainDesc = descData.plain_text || descData.text || '';
+                  extractedDesc = plainDesc + (extractedDesc ? '\n' + extractedDesc : '');
+                }
+              } catch (e) {}
+            }
+          }
+        } catch (e) {
+          console.warn("Mercado libre client-side scrape warning:", e);
+        }
       }
+
+      // If client-side didn't fill description or title, query backend /api/scrape-link
+      if (!extractedTitle || !mainImage || mainImage === '/images/default.svg') {
+        const response = await fetch(`${BACKEND_URL}/scrape-link`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: urlStr })
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (!extractedTitle) extractedTitle = data.title || '';
+          if (!extractedDesc) extractedDesc = data.description || '';
+          if (!extractedCategory) extractedCategory = data.category || clientDetectCategory(extractedTitle);
+          if (extractedCost === '5.00' && data.originalPrice) extractedCost = data.originalPrice.toString();
+          if (data.weight) extractedWeight = data.weight;
+          if (data.dimensions) extractedDimensions = data.dimensions;
+          
+          if (data.images && data.images.length > 0) {
+            extractedImages = data.images;
+            mainImage = extractedImages[0];
+          } else if (data.image) {
+            mainImage = data.image;
+            extractedImages = [data.image];
+          }
+        }
+      }
+
+      // Fallback gallery images if gallery is empty
+      if (extractedImages.length === 0) {
+        const sampleGallery = selectClientPhotoGallery(extractedTitle || urlStr);
+        extractedImages = sampleGallery;
+        mainImage = sampleGallery[0];
+      }
+
+      setNewProdTitle(extractedTitle || 'Producto Importado');
+      setNewProdDesc(extractedDesc || 'Descripción y detalles completos cargados del proveedor.');
+      setNewProdCategory(extractedCategory || clientDetectCategory(extractedTitle));
+      setNewProdCost(extractedCost);
+      setNewProdStock(extractedStock);
+      setNewProdImage(mainImage);
+      setNewProdImages(extractedImages);
+      setNewProdWeight(extractedWeight);
+      setNewProdDimensions(extractedDimensions);
+      
+      showToast(`¡Datos del proveedor auto-completados! Se cargaron ${extractedImages.length} fotos HD.`);
     } catch (err) {
       showToast("Error de red con el extractor.", 'error');
     } finally {
@@ -1052,16 +1153,20 @@ const selectClientPhotoGallery = (q) => {
       return;
     }
 
+    const galleryImages = newProdImages && newProdImages.length > 0 ? newProdImages : [newProdImage || '/images/default.svg'];
+    const mainImg = galleryImages.includes(newProdImage) ? newProdImage : galleryImages[0];
+
     const payload = {
       title: newProdTitle,
       category: newProdCategory,
       description: newProdDesc,
       originalPrice: parseFloat(newProdCost),
-      stock: parseInt(newProdStock),
+      stock: parseInt(newProdStock) || 50,
       supplierUrl: newProdSupplier || 'https://es.aliexpress.com/',
-      image: newProdImage,
-      weight: newProdWeight,
-      dimensions: newProdDimensions,
+      image: mainImg,
+      images: galleryImages,
+      weight: newProdWeight || '300 g',
+      dimensions: newProdDimensions || '15 x 10 x 5 cm',
       utilityScore: 8.5
     };
 
@@ -1072,7 +1177,7 @@ const selectClientPhotoGallery = (q) => {
         salePrice: Number((payload.originalPrice * (1 + settings.marginPercentage / 100)).toFixed(2))
       };
       setProducts(prev => [...prev, newLocalProd]);
-      showToast("Simulación: Producto añadido con éxito.");
+      showToast(`Simulación: Producto añadido con éxito (${galleryImages.length} fotos).`);
       resetProductForm();
       return;
     }
@@ -1084,7 +1189,7 @@ const selectClientPhotoGallery = (q) => {
         body: JSON.stringify(payload)
       });
       if (response.ok) {
-        showToast("Producto guardado con éxito.");
+        showToast(`Producto guardado con éxito (${galleryImages.length} fotos en la galería).`);
         resetProductForm();
         fetchStoreData();
       }
@@ -1100,6 +1205,7 @@ const selectClientPhotoGallery = (q) => {
     setNewProdStock('50');
     setNewProdSupplier('');
     setNewProdImage('/images/default.svg');
+    setNewProdImages([]);
     setNewProdWeight('250 g');
     setNewProdDimensions('15 x 10 x 5 cm');
   };
@@ -1374,7 +1480,7 @@ const selectClientPhotoGallery = (q) => {
                           fontSize: '0.75rem', 
                           fontWeight: 'bold' 
                         }}>
-                          â— {order.status}
+                          ● {order.status}
                         </span>
                       </div>
                     </div>
@@ -1383,7 +1489,7 @@ const selectClientPhotoGallery = (q) => {
                     <h4 style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Artículos:</h4>
                     {order.items.map((item, index) => (
                       <div key={index} style={{ display: 'flex', justifyContent: 'space-between', padding: '0.25rem 0', fontSize: '0.95rem' }}>
-                        <span>â€¢ {item.title} <span style={{ color: 'var(--text-muted)' }}>(x{item.quantity})</span></span>
+                        <span>• {item.title} <span style={{ color: 'var(--text-muted)' }}>(x{item.quantity})</span></span>
                         <span style={{ fontWeight: '600', color: 'var(--accent-cyan)' }}>{new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 0 }).format(item.salePrice * item.quantity)}</span>
                       </div>
                     ))}
@@ -1395,7 +1501,6 @@ const selectClientPhotoGallery = (q) => {
 
                   {/* Real-time Dropshipping shipping tracker visual pipeline */}
                   {renderTrackerPipeline(order.status)}
-
                 </div>
               ))
             )}
@@ -1405,57 +1510,80 @@ const selectClientPhotoGallery = (q) => {
 
       {/* --- 4. VIEW: ADMIN CONTROL PANEL --- */}
       {currentView === 'admin' && (
-        <AdminDashboard 
-          handleSyncCatalog={handleSyncCatalog}
-          isSyncingCatalog={isSyncingCatalog}
-          backendOnline={backendOnline}
-          totalSales={totalSales}
-          totalProfit={totalProfit}
-          pendingOrders={pendingOrders}
-          products={products}
-          handleBulkSearch={handleBulkSearch}
-          bulkSearchQuery={bulkSearchQuery}
-          setBulkSearchQuery={setBulkSearchQuery}
-          bulkSearching={bulkSearching}
-          bulkSearchResults={bulkSearchResults}
-          bulkSupplierFilter={bulkSupplierFilter}
-          setBulkSupplierFilter={setBulkSupplierFilter}
-          settings={settings}
-          handleImportProduct={handleImportProduct}
-          handleMarginSubmit={handleMarginSubmit}
-          adminMarginInput={adminMarginInput}
-          setAdminMarginInput={setAdminMarginInput}
-          adminRateInput={adminRateInput}
-          setAdminRateInput={setAdminRateInput}
-          handleAddProductSubmit={handleAddProductSubmit}
-          newProdSupplier={newProdSupplier}
-          setNewProdSupplier={setNewProdSupplier}
-          handleAutoScrape={handleAutoScrape}
-          scrapingLink={scrapingLink}
-          newProdTitle={newProdTitle}
-          setNewProdTitle={setNewProdTitle}
-          newProdCategory={newProdCategory}
-          setNewProdCategory={setNewProdCategory}
-          newProdCost={newProdCost}
-          setNewProdCost={setNewProdCost}
-          newProdStock={newProdStock}
-          setNewProdStock={setNewProdStock}
-          newProdWeight={newProdWeight}
-          setNewProdWeight={setNewProdWeight}
-          newProdDimensions={newProdDimensions}
-          setNewProdDimensions={setNewProdDimensions}
-          newProdImage={newProdImage}
-          setNewProdImage={setNewProdImage}
-          newProdDesc={newProdDesc}
-          setNewProdDesc={setNewProdDesc}
-          orders={orders}
-          setSelectedOrderFulfillment={setSelectedOrderFulfillment}
-          setIsFulfillmentOpen={setIsFulfillmentOpen}
-          navigateToDetail={navigateToDetail}
-          handleDeleteProduct={handleDeleteProduct}
-          handleDeleteOrder={handleDeleteOrder}
-          handleUpdateOrderStatus={handleUpdateOrderStatus}
-        />
+        (loggedInUser && (loggedInUser.isAdmin || loggedInUser.role === 'admin' || loggedInUser.email?.toLowerCase() === 'enzorodriguez31@gmail.com')) ? (
+          <AdminDashboard 
+            handleSyncCatalog={handleSyncCatalog}
+            isSyncingCatalog={isSyncingCatalog}
+            backendOnline={backendOnline}
+            totalSales={totalSales}
+            totalProfit={totalProfit}
+            pendingOrders={pendingOrders}
+            products={products}
+            handleBulkSearch={handleBulkSearch}
+            bulkSearchQuery={bulkSearchQuery}
+            setBulkSearchQuery={setBulkSearchQuery}
+            bulkSearching={bulkSearching}
+            bulkSearchResults={bulkSearchResults}
+            bulkSupplierFilter={bulkSupplierFilter}
+            setBulkSupplierFilter={setBulkSupplierFilter}
+            settings={settings}
+            handleImportProduct={handleImportProduct}
+            handleMarginSubmit={handleMarginSubmit}
+            adminMarginInput={adminMarginInput}
+            setAdminMarginInput={setAdminMarginInput}
+            adminRateInput={adminRateInput}
+            setAdminRateInput={setAdminRateInput}
+            handleAddProductSubmit={handleAddProductSubmit}
+            newProdSupplier={newProdSupplier}
+            setNewProdSupplier={setNewProdSupplier}
+            handleAutoScrape={handleAutoScrape}
+            scrapingLink={scrapingLink}
+            newProdTitle={newProdTitle}
+            setNewProdTitle={setNewProdTitle}
+            newProdCategory={newProdCategory}
+            setNewProdCategory={setNewProdCategory}
+            newProdCost={newProdCost}
+            setNewProdCost={setNewProdCost}
+            newProdStock={newProdStock}
+            setNewProdStock={setNewProdStock}
+            newProdWeight={newProdWeight}
+            setNewProdWeight={setNewProdWeight}
+            newProdDimensions={newProdDimensions}
+            setNewProdDimensions={setNewProdDimensions}
+            newProdImage={newProdImage}
+            setNewProdImage={setNewProdImage}
+            newProdImages={newProdImages}
+            setNewProdImages={setNewProdImages}
+            newProdDesc={newProdDesc}
+            setNewProdDesc={setNewProdDesc}
+            orders={orders}
+            setSelectedOrderFulfillment={setSelectedOrderFulfillment}
+            setIsFulfillmentOpen={setIsFulfillmentOpen}
+            navigateToDetail={navigateToDetail}
+            handleDeleteProduct={handleDeleteProduct}
+            handleDeleteOrder={handleDeleteOrder}
+            handleUpdateOrderStatus={handleUpdateOrderStatus}
+          />
+        ) : (
+          <main className="container" style={{ padding: '4rem 1rem', textAlign: 'center' }}>
+            <div className="card" style={{ maxWidth: '500px', margin: '0 auto', padding: '2.5rem', borderRadius: '16px' }}>
+              <div style={{ width: '60px', height: '60px', borderRadius: '50%', background: 'rgba(239,68,68,0.1)', color: 'var(--error)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem auto' }}>
+                <Lock size={32} />
+              </div>
+              <h2 style={{ marginBottom: '1rem', color: 'var(--text-main)', fontWeight: 'bold' }}>Acceso Restringido</h2>
+              <p style={{ color: 'var(--text-muted)', marginBottom: '2rem', fontSize: '0.95rem', lineHeight: '1.5' }}>
+                El Dashboard de Ventas y Administración está reservado únicamente para el dueño de la tienda. Debes iniciar sesión con una cuenta de administrador.
+              </p>
+              <button 
+                className="add-to-cart-btn" 
+                onClick={() => setCurrentView('store')}
+                style={{ width: '100%', justifyContent: 'center', padding: '0.8rem 1.5rem' }}
+              >
+                Volver a la Tienda
+              </button>
+            </div>
+          </main>
+        )
       )}
 
       {/* --- POPUPS & DRAWER MODALS --- */}
