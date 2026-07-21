@@ -554,7 +554,7 @@ function App() {
     setUserOrders([]);
   };
 
-  // Scrape link function with full HD image gallery and live API detail extraction
+  // Scrape link function with 3s fast timeout to prevent UI freezes
   const handleAutoScrape = async () => {
     if (!newProdSupplier || !newProdSupplier.trim()) {
       showToast("Por favor pega primero la URL o nombre del producto en el campo correspondiente.", 'warning');
@@ -562,6 +562,20 @@ function App() {
     }
 
     setScrapingLink(true);
+
+    const fetchWithTimeout = async (url, options = {}, timeoutMs = 3000) => {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), timeoutMs);
+      try {
+        const res = await fetch(url, { ...options, signal: controller.signal });
+        clearTimeout(timer);
+        return res;
+      } catch (err) {
+        clearTimeout(timer);
+        throw err;
+      }
+    };
+
     try {
       const urlStr = newProdSupplier.trim();
       let extractedTitle = '';
@@ -591,7 +605,7 @@ function App() {
       // If not a direct ID, but looks like a text query or ML search, search top result
       if (!targetMeliId && (urlStr.includes('mercadolibre') || !urlStr.startsWith('http'))) {
         try {
-          const searchRes = await fetch(`https://api.mercadolibre.com/sites/MLA/search?q=${encodeURIComponent(urlStr)}&limit=1`);
+          const searchRes = await fetchWithTimeout(`https://api.mercadolibre.com/sites/MLA/search?q=${encodeURIComponent(urlStr)}&limit=1`, {}, 3000);
           if (searchRes.ok) {
             const searchData = await searchRes.json();
             if (searchData.results && searchData.results.length > 0) {
@@ -606,7 +620,7 @@ function App() {
       if (targetMeliId) {
         try {
           console.log(`[AUTO-SCRAPE] Consultando API oficial Mercado Libre para item: ${targetMeliId}`);
-          const itemRes = await fetch(`https://api.mercadolibre.com/items/${targetMeliId}`);
+          const itemRes = await fetchWithTimeout(`https://api.mercadolibre.com/items/${targetMeliId}`, {}, 3000);
           if (itemRes.ok) {
             const itemData = await itemRes.json();
             extractedTitle = itemData.title || '';
@@ -657,7 +671,7 @@ function App() {
 
             // Fetch detailed text description
             try {
-              const descRes = await fetch(`https://api.mercadolibre.com/items/${targetMeliId}/description`);
+              const descRes = await fetchWithTimeout(`https://api.mercadolibre.com/items/${targetMeliId}/description`, {}, 2500);
               if (descRes.ok) {
                 const descData = await descRes.json();
                 const plainDesc = descData.plain_text || descData.text || '';
@@ -670,30 +684,42 @@ function App() {
         }
       }
 
-      // 2. Client-side web scraper via CORS proxy for external supplier links (AliExpress, Amazon, Alibaba, Temu, etc.)
+      // 2. Fast title slug extraction from URL string
+      if (!extractedTitle || extractedTitle === 'Producto Importado') {
+        const slugMatch = urlStr.match(/item\/\d+[-_]([^/?#]+)/i) || 
+                          urlStr.match(/\/([a-zA-Z0-9._-]{10,})\/(?:dp|item)/i) ||
+                          urlStr.match(/\/p\/([^/?#]+)/i);
+
+        if (slugMatch && slugMatch[1]) {
+          const rawSlug = slugMatch[1].replace(/[-_]/g, ' ').replace(/\.html?$/i, '').trim();
+          if (rawSlug.length > 3 && !rawSlug.includes('undefined')) {
+            extractedTitle = rawSlug.charAt(0).toUpperCase() + rawSlug.slice(1);
+          }
+        }
+      }
+
+      // 3. Client-side web scraper via CORS proxy with strict timeout
       if ((!extractedTitle || !mainImage || mainImage === '/images/default.svg') && urlStr.startsWith('http')) {
         try {
-          console.log(`[CLIENT SCRAPE] Escaneando enlace externo: ${urlStr}`);
-          
           // Try backend scrape-link endpoint first if online
           let scrapedData = null;
           try {
-            const response = await fetch(`${BACKEND_URL}/scrape-link`, {
+            const response = await fetchWithTimeout(`${BACKEND_URL}/scrape-link`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ url: urlStr })
-            });
+            }, 2500);
             if (response.ok) {
               scrapedData = await response.json();
             }
           } catch (e) {
-            console.warn("Backend not available, trying client-side CORS proxy...");
+            console.warn("Backend not available, trying fast client-side CORS proxy...");
           }
 
           // If backend didn't return data, fetch HTML directly via client CORS proxy
           if (!scrapedData || !scrapedData.title || scrapedData.title === 'Gadget Importado') {
             const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(urlStr)}`;
-            const htmlRes = await fetch(proxyUrl);
+            const htmlRes = await fetchWithTimeout(proxyUrl, {}, 2500);
             if (htmlRes.ok) {
               const htmlText = await htmlRes.text();
               
@@ -739,28 +765,14 @@ function App() {
             }
           }
         } catch (backendErr) {
-          console.warn("Client-side scrape error:", backendErr);
-        }
-      }
-
-      // 3. Extract title slug from URL path if title is still empty
-      if (!extractedTitle || extractedTitle === 'Producto Importado') {
-        const slugMatch = urlStr.match(/item\/\d+[-_]([^/?#]+)/i) || 
-                          urlStr.match(/\/([a-zA-Z0-9._-]{10,})\/(?:dp|item)/i) ||
-                          urlStr.match(/\/p\/([^/?#]+)/i);
-
-        if (slugMatch && slugMatch[1]) {
-          const rawSlug = slugMatch[1].replace(/[-_]/g, ' ').replace(/\.html?$/i, '').trim();
-          if (rawSlug.length > 3 && !rawSlug.includes('undefined')) {
-            extractedTitle = rawSlug.charAt(0).toUpperCase() + rawSlug.slice(1);
-          }
+          console.warn("Client-side scrape timeout or error:", backendErr);
         }
       }
 
       // 4. If title is known, search Mercado Libre API to grab REAL matching product images & specs!
       if (extractedTitle && (!extractedImages.length || mainImage === '/images/default.svg')) {
         try {
-          const searchRes = await fetch(`https://api.mercadolibre.com/sites/MLA/search?q=${encodeURIComponent(extractedTitle)}&limit=1`);
+          const searchRes = await fetchWithTimeout(`https://api.mercadolibre.com/sites/MLA/search?q=${encodeURIComponent(extractedTitle)}&limit=1`, {}, 2500);
           if (searchRes.ok) {
             const searchData = await searchRes.json();
             if (searchData.results && searchData.results.length > 0) {
