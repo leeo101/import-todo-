@@ -74,7 +74,7 @@ const AdminDashboard = ({
             )}
           </button>
           <span className="hero-badge" style={{ margin: 0, padding: '0.4rem 0.8rem', background: backendOnline ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)', borderColor: backendOnline ? 'var(--success)' : 'var(--error)', color: backendOnline ? 'var(--success)' : 'var(--error)' }}>
-            ● Backend {backendOnline ? 'Online' : 'Offline'}
+            ● {backendOnline ? (typeof window !== 'undefined' && window.location.hostname.includes('vercel.app') ? 'Tienda Cloud Online (Vercel)' : 'Backend Online') : 'Backend Offline'}
           </span>
         </div>
       </div>

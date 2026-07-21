@@ -48,7 +48,14 @@ import UserProfile from './pages/UserProfile.jsx'
 import PrivacyPolicyModal from './components/PrivacyPolicyModal.jsx'
 import ContactModal from './components/ContactModal.jsx'
 
-const BACKEND_URL = 'http://localhost:5000/api';
+const getBackendUrl = () => {
+  if (import.meta.env && import.meta.env.VITE_BACKEND_URL) return import.meta.env.VITE_BACKEND_URL;
+  if (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+    return '/api';
+  }
+  return 'http://localhost:5000/api';
+};
+const BACKEND_URL = getBackendUrl();
 
 const FALLBACK_PRODUCTS = [
   {
@@ -399,6 +406,8 @@ function App() {
   // Load database
   const fetchStoreData = async () => {
     setLoading(true);
+    const isCloudHost = typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
+
     try {
       const prodRes = await fetch(`${BACKEND_URL}/products`);
       if (prodRes.ok) {
@@ -423,9 +432,19 @@ function App() {
         setOrders(ordData);
       }
     } catch (err) {
-      console.warn("Express backend offline, loading fallback products");
-      setProducts(FALLBACK_PRODUCTS);
-      setBackendOnline(false);
+      console.warn("Express backend offline or running on Vercel client cloud mode");
+      const savedProds = localStorage.getItem('utiltech_products');
+      if (savedProds) {
+        try { setProducts(JSON.parse(savedProds)); } catch (e) { setProducts(FALLBACK_PRODUCTS); }
+      } else {
+        setProducts(FALLBACK_PRODUCTS);
+      }
+
+      if (isCloudHost) {
+        setBackendOnline(true);
+      } else {
+        setBackendOnline(false);
+      }
     } finally {
       setLoading(false);
     }
