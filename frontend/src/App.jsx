@@ -1275,19 +1275,20 @@ const selectClientPhotoGallery = (q) => {
   const handleSyncCatalog = async () => {
     setIsSyncingCatalog(true);
     try {
-      const res = await fetch('${BACKEND_URL}/admin/sync-catalog', {
+      const res = await fetch(`${BACKEND_URL}/admin/sync-catalog`, {
         method: 'POST'
       });
       if (res.ok) {
-
         const data = await res.json();
-        setProducts(data);
-        showToast('Catálogo sincronizado exitosamente', 'success');
+        if (data.products && Array.isArray(data.products)) {
+          setProducts(data.products);
+        }
+        showToast(data.message || 'Catálogo y precios en vivo sincronizados con éxito.', 'success');
       } else {
-        showToast('Error al sincronizar catálogo', 'error');
+        showToast('Error al sincronizar catálogo con los proveedores.', 'error');
       }
     } catch (err) {
-      showToast('Error de conexión al sincronizar', 'error');
+      showToast('Error de conexión al sincronizar.', 'error');
     } finally {
       setIsSyncingCatalog(false);
     }

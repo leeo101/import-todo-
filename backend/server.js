@@ -615,15 +615,15 @@ app.post('/api/payments/webhook', async (req, res) => {
   res.sendStatus(200);
 });
 
-// Function to synchronize all catalog product prices and stocks from their original suppliers
+// Function to synchronize all catalog // Helper to sync supplier catalog prices, stock, titles and descriptions in live database
 const syncSupplierCatalog = async () => {
-  console.log('[CATALOG SYNC] Iniciando sincronización de precios y stocks con proveedores...');
+  console.log('[CATALOG SYNC] Iniciando sincronización de precios, datos y stocks con proveedores...');
   let updatedCount = 0;
   
   try {
     const db = await getDb();
     
-    // Update live Dollar exchange rate
+    // 1. Update live Dollar exchange rate
     console.log('[CATALOG SYNC] Actualizando tipo de cambio del dólar en vivo...');
     try {
       const rate = await fetchDollarRate();
@@ -633,6 +633,8 @@ const syncSupplierCatalog = async () => {
     }
 
     const products = await db.all('SELECT * FROM products');
+    const settings = await db.get('SELECT value FROM settings WHERE key = ?', 'usdToArsRate');
+    const usdRate = settings ? parseFloat(settings.value) : 1450;
     
     const apiKey = process.env.RAPIDAPI_KEY;
     const aliHost = 'aliexpress-datahub.p.rapidapi.com';
@@ -641,16 +643,37 @@ const syncSupplierCatalog = async () => {
     for (const p of products) {
       let newPrice = p.originalPrice;
       let newStock = p.stock;
+      let newTitle = p.title;
+      let newDesc = p.description;
+      let newImage = p.image;
+      let newImagesJson = p.images;
+      let newWeight = p.weight;
+      let newDimensions = p.dimensions;
       let syncSuccess = false;
 
-      // 1. Mercado Libre Sync
-      if (p.id.startsWith('ml_') && !p.id.includes('mock')) {
+      // A. Mercado Libre Sync by ID or URL
+      const meliMatch = (p.supplierUrl || p.id).match(/(MLA-?\d+|\b\d{8,12}\b)/i);
+      const isMeli = (p.id && p.id.startsWith('ml_')) || (p.supplierUrl && (p.supplierUrl.includes('mercadolibre') || p.supplierUrl.includes('MLA')));
+
+      if (isMeli && meliMatch) {
         try {
-          const cleanId = p.id.replace('ml_', '');
-          const response = await fetchMeliItemDetails(cleanId);
+          const numbersOnly = meliMatch[1].replace(/[^0-9]/g, '');
+          const targetMeliId = `MLA${numbersOnly}`;
+          console.log(`[CATALOG SYNC] Verificando proveedor Mercado Libre: ${targetMeliId}`);
+          
+          const response = await fetchMeliItemDetails(targetMeliId);
           if (response) {
-            newPrice = response.originalPrice;
-            newStock = response.stock;
+            if (response.originalPrice) newPrice = response.originalPrice;
+            if (response.stock !== undefined) newStock = response.stock;
+            if (response.title) newTitle = response.title;
+            if (response.description) newDesc = response.description;
+            if (response.images && response.images.length > 0) {
+              newImagesJson = JSON.stringify(response.images);
+              newImage = response.images[0];
+            }
+            if (response.weight) newWeight = response.weight;
+            if (response.dimensions) newDimensions = response.dimensions;
+            
             syncSuccess = true;
           }
         } catch (e) {
@@ -658,7 +681,7 @@ const syncSupplierCatalog = async () => {
         }
       }
 
-      // 2. AliExpress Sync
+      // B. AliExpress Sync by API ID
       else if (p.id.startsWith('ali_') && !p.id.includes('gen') && apiKey && !apiKey.includes('tu_clave_de_rapidapi')) {
         try {
           const cleanId = p.id.replace('ali_', '');
@@ -667,16 +690,15 @@ const syncSupplierCatalog = async () => {
           
           const item = data.result || data.data || data;
           if (item) {
-            // Parse price
             if (item.price) {
               const pStr = typeof item.price === 'object' ? (item.price.value || item.price.originalPrice) : item.price;
               const cleaned = pStr ? pStr.toString().replace(/[^0-9.]/g, '') : '';
               const val = parseFloat(cleaned);
               if (!isNaN(val) && val > 0) newPrice = val;
             }
-            // Parse stock
             if (item.stock !== undefined) newStock = item.stock;
             else if (item.availableQuantity !== undefined) newStock = item.availableQuantity;
+            if (item.title) newTitle = item.title;
             
             syncSuccess = true;
           }
@@ -685,7 +707,7 @@ const syncSupplierCatalog = async () => {
         }
       }
 
-      // 3. Amazon Sync
+      // C. Amazon Sync by API ASIN
       else if (p.id.startsWith('amz_') && !p.id.includes('gen') && apiKey && !apiKey.includes('tu_clave_de_rapidapi')) {
         try {
           const cleanId = p.id.replace('amz_', '');
@@ -694,13 +716,13 @@ const syncSupplierCatalog = async () => {
           
           const item = data.product_details || data.data || data;
           if (item) {
-            // Parse price
             const priceStr = item.price || item.product_price;
             if (priceStr) {
               const cleaned = priceStr.toString().replace(/[^0-9.]/g, '');
               const val = parseFloat(cleaned);
               if (!isNaN(val) && val > 0) newPrice = val;
             }
+            if (item.product_title) newTitle = item.product_title;
             syncSuccess = true;
           }
         } catch (e) {
@@ -708,19 +730,50 @@ const syncSupplierCatalog = async () => {
         }
       }
 
-      // If price or stock changed, save back to database
-      if (syncSuccess && (newPrice !== p.originalPrice || newStock !== p.stock)) {
+      // D. External Web Link Scraper fallback (AliExpress, Amazon, Alibaba, etc.)
+      else if (p.supplierUrl && p.supplierUrl.startsWith('http')) {
+        try {
+          console.log(`[CATALOG SYNC] Re-escaneando enlace del proveedor: ${p.supplierUrl}`);
+          const data = await scrapeUrl(p.supplierUrl);
+          if (data) {
+            if (data.originalPrice && data.originalPrice !== 4.5) newPrice = data.originalPrice;
+            if (data.title && data.title !== 'Producto Importado') newTitle = data.title;
+            if (data.description) newDesc = data.description;
+            if (data.image && !data.image.includes('default.svg')) newImage = data.image;
+            if (data.images && data.images.length > 0) newImagesJson = JSON.stringify(data.images);
+            if (data.weight) newWeight = data.weight;
+            if (data.dimensions) newDimensions = data.dimensions;
+            syncSuccess = true;
+          }
+        } catch (err) {
+          console.warn(`[CATALOG SYNC WARNING] Error escaneando enlace ${p.supplierUrl}:`, err.message);
+        }
+      }
+
+      // If price, stock, title, description, or photos changed, update SQLite database
+      const hasChanged = newPrice !== p.originalPrice || newStock !== p.stock || newTitle !== p.title || newDesc !== p.description || newImage !== p.image;
+      
+      if (syncSuccess || hasChanged) {
         await db.run(
-          'UPDATE products SET originalPrice = ?, stock = ? WHERE id = ?',
-          newPrice, newStock, p.id
+          `UPDATE products SET 
+            title = ?, 
+            description = ?, 
+            originalPrice = ?, 
+            stock = ?, 
+            image = ?, 
+            images = ?, 
+            weight = ?, 
+            dimensions = ? 
+           WHERE id = ?`,
+          newTitle, newDesc, newPrice, newStock, newImage, newImagesJson, newWeight, newDimensions, p.id
         );
         updatedCount++;
-        console.log(`[CATALOG SYNC] Producto [${p.title}] actualizado: Costo=${newPrice} USD, Stock=${newStock}`);
+        console.log(`[CATALOG SYNC] Producto [${newTitle}] verificado/actualizado. Costo: ${newPrice} USD, Stock: ${newStock}`);
       }
     }
 
-    console.log(`[CATALOG SYNC SUCCESS] Sincronización finalizada. ${updatedCount} productos actualizados.`);
-    return updatedCount;
+    console.log(`[CATALOG SYNC SUCCESS] Sincronización finalizada. ${updatedCount} productos auditados y actualizados.`);
+    return { updatedCount, totalChecked: products.length };
   } catch (error) {
     console.error('[CATALOG SYNC ERROR] Error durante la sincronización de catálogo:', error.message);
     throw error;
@@ -730,8 +783,30 @@ const syncSupplierCatalog = async () => {
 // Route to manually trigger catalog price and stock synchronization from Admin panel
 app.post('/api/admin/sync-catalog', async (req, res) => {
   try {
-    const updatedCount = await syncSupplierCatalog();
-    res.json({ success: true, message: `Sincronización finalizada con éxito. ${updatedCount} productos actualizados.` });
+    const { updatedCount, totalChecked } = await syncSupplierCatalog();
+    const db = await getDb();
+    const products = await db.all('SELECT * FROM products ORDER BY id DESC');
+
+    const formattedProducts = products.map(p => {
+      let parsedImages = [];
+      try {
+        if (p.images) parsedImages = JSON.parse(p.images);
+      } catch (e) {
+        parsedImages = p.image ? [p.image] : [];
+      }
+      if (parsedImages.length === 0 && p.image) parsedImages = [p.image];
+
+      return {
+        ...p,
+        images: parsedImages
+      };
+    });
+
+    res.json({ 
+      success: true, 
+      message: `¡Sincronización en vivo completada! Se verificaron ${totalChecked} productos con sus proveedores y se actualizaron ${updatedCount} productos en tiempo real.`,
+      products: formattedProducts
+    });
   } catch (error) {
     res.status(500).json({ error: `Error de servidor durante la sincronización: ${error.message}` });
   }
