@@ -127,7 +127,10 @@ const AdminDashboard = ({
         </form>
 
         {(() => {
-          const filteredList = bulkSearchResults.filter(res => {
+          const [onlyDealsFilter, setOnlyDealsFilter] = React.useState(false);
+          const [sortByFilter, setSortByFilter] = React.useState('default');
+
+          let filteredList = bulkSearchResults.filter(res => {
             if (bulkSupplierFilter === 'Todos') return true;
             if (bulkSupplierFilter === 'Mercado Libre' && res.supplierName === 'Mercado Libre') return true;
             if (bulkSupplierFilter === 'AliExpress' && res.supplierName === 'AliExpress') return true;
@@ -140,42 +143,103 @@ const AdminDashboard = ({
             return false;
           });
 
+          if (onlyDealsFilter) {
+            filteredList = filteredList.filter(res => res.discountPercentage > 0 || res.isCheapest || res.shippingCostUSD === 0);
+          }
+
+          if (sortByFilter === 'cheapest') {
+            filteredList.sort((a, b) => a.originalPrice - b.originalPrice);
+          } else if (sortByFilter === 'discount') {
+            filteredList.sort((a, b) => (b.discountPercentage || 0) - (a.discountPercentage || 0));
+          } else if (sortByFilter === 'bestseller') {
+            filteredList.sort((a, b) => (b.salesCount || 0) - (a.salesCount || 0));
+          }
+
           if (bulkSearchResults.length === 0) return null;
+
+          const dealsCount = bulkSearchResults.filter(r => r.discountPercentage > 0 || r.isCheapest || r.shippingCostUSD === 0).length;
 
           return (
             <>
-              <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', flexWrap: 'wrap', borderBottom: '1px solid var(--border-light)', paddingBottom: '1rem' }}>
-                {['Todos', 'Mercado Libre', 'AliExpress', 'Amazon', 'Banggood', 'CJ Dropshipping', 'Temu', 'eBay', 'Walmart'].map(provider => (
+              {/* Supplier & Offer Filter Tabs */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '1.25rem', borderBottom: '1px solid var(--border-light)', paddingBottom: '1rem' }}>
+                <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+                  {['Todos', 'Mercado Libre', 'AliExpress', 'Amazon', 'Banggood', 'CJ Dropshipping', 'Temu', 'eBay', 'Walmart'].map(provider => (
+                    <button
+                      key={provider}
+                      type="button"
+                      onClick={() => setBulkSupplierFilter(provider)}
+                      style={{
+                        padding: '0.35rem 0.85rem',
+                        fontSize: '0.8rem',
+                        borderRadius: '20px',
+                        border: '1px solid',
+                        borderColor: bulkSupplierFilter === provider ? 'var(--accent-cyan)' : 'var(--border-light)',
+                        background: bulkSupplierFilter === provider ? 'rgba(6, 182, 212, 0.12)' : 'transparent',
+                        color: bulkSupplierFilter === provider ? 'var(--accent-cyan)' : 'var(--text-muted)',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease',
+                        fontWeight: bulkSupplierFilter === provider ? 'bold' : 'normal'
+                      }}
+                    >
+                      {provider} ({
+                        provider === 'Todos' ? bulkSearchResults.length :
+                        provider === 'Mercado Libre' ? bulkSearchResults.filter(r => r.supplierName === 'Mercado Libre').length :
+                        provider === 'AliExpress' ? bulkSearchResults.filter(r => r.supplierName === 'AliExpress').length :
+                        provider === 'Amazon' ? bulkSearchResults.filter(r => r.supplierName === 'Amazon Associates').length :
+                        provider === 'Banggood' ? bulkSearchResults.filter(r => r.supplierName === 'Banggood').length :
+                        provider === 'CJ Dropshipping' ? bulkSearchResults.filter(r => r.supplierName === 'CJ Dropshipping').length :
+                        provider === 'Temu' ? bulkSearchResults.filter(r => r.supplierName === 'Temu').length :
+                        provider === 'eBay' ? bulkSearchResults.filter(r => r.supplierName === 'eBay').length :
+                        bulkSearchResults.filter(r => r.supplierName === 'Walmart').length
+                      })
+                    </button>
+                  ))}
+                </div>
+
+                {/* Offer Toggle & Sort Options */}
+                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
                   <button
-                    key={provider}
                     type="button"
-                    onClick={() => setBulkSupplierFilter(provider)}
+                    onClick={() => setOnlyDealsFilter(prev => !prev)}
                     style={{
-                      padding: '0.4rem 1rem',
+                      padding: '0.35rem 0.9rem',
                       fontSize: '0.8rem',
                       borderRadius: '20px',
-                      border: '1px solid',
-                      borderColor: bulkSupplierFilter === provider ? 'var(--accent-cyan)' : 'var(--border-light)',
-                      background: bulkSupplierFilter === provider ? 'rgba(6, 182, 212, 0.1)' : 'transparent',
-                      color: bulkSupplierFilter === provider ? 'var(--accent-cyan)' : 'var(--text-muted)',
+                      border: onlyDealsFilter ? '2px solid #ef4444' : '1px solid var(--border-light)',
+                      background: onlyDealsFilter ? 'rgba(239, 68, 68, 0.15)' : 'rgba(255,255,255,0.02)',
+                      color: onlyDealsFilter ? '#ef4444' : 'var(--text-main)',
                       cursor: 'pointer',
-                      transition: 'all 0.3s ease',
-                      fontWeight: bulkSupplierFilter === provider ? 'bold' : 'normal'
+                      fontWeight: 'bold',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.3rem',
+                      transition: 'all 0.2s ease'
                     }}
                   >
-                    {provider} ({
-                      provider === 'Todos' ? bulkSearchResults.length :
-                      provider === 'Mercado Libre' ? bulkSearchResults.filter(r => r.supplierName === 'Mercado Libre').length :
-                      provider === 'AliExpress' ? bulkSearchResults.filter(r => r.supplierName === 'AliExpress').length :
-                      provider === 'Amazon' ? bulkSearchResults.filter(r => r.supplierName === 'Amazon Associates').length :
-                      provider === 'Banggood' ? bulkSearchResults.filter(r => r.supplierName === 'Banggood').length :
-                      provider === 'CJ Dropshipping' ? bulkSearchResults.filter(r => r.supplierName === 'CJ Dropshipping').length :
-                      provider === 'Temu' ? bulkSearchResults.filter(r => r.supplierName === 'Temu').length :
-                      provider === 'eBay' ? bulkSearchResults.filter(r => r.supplierName === 'eBay').length :
-                      bulkSearchResults.filter(r => r.supplierName === 'Walmart').length
-                    })
+                    🔥 Solo Ofertas y Descuentos ({dealsCount})
                   </button>
-                ))}
+
+                  <select
+                    value={sortByFilter}
+                    onChange={(e) => setSortByFilter(e.target.value)}
+                    style={{
+                      background: 'var(--bg-main)',
+                      border: '1px solid var(--border-light)',
+                      color: 'var(--text-main)',
+                      borderRadius: '20px',
+                      padding: '0.35rem 0.8rem',
+                      fontSize: '0.8rem',
+                      outline: 'none',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <option value="default">Ordenar por: Relevancia</option>
+                    <option value="cheapest">🏷️ Precio Más Bajo Primero</option>
+                    <option value="discount">🔥 Mayor Descuento %</option>
+                    <option value="bestseller">⭐ Más Vendidos Primero</option>
+                  </select>
+                </div>
               </div>
 
               <div className="table-container">
@@ -201,10 +265,12 @@ const AdminDashboard = ({
                           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                             <img src={res.image} alt={res.title} style={{ width: '40px', height: '40px', borderRadius: '4px', objectFit: 'contain', background: '#fff', padding: '2px', flexShrink: 0 }} onError={(e) => { e.target.src = '/images/default.svg' }} />
                             <div>
-                              <div style={{ fontWeight: '600', fontSize: '0.9rem', maxWidth: '320px', display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }} title={res.title}>
+                              <div style={{ fontWeight: '600', fontSize: '0.9rem', maxWidth: '340px', display: 'flex', alignItems: 'center', gap: '0.35rem', flexWrap: 'wrap' }} title={res.title}>
                                 {res.title}
-                                {res.isCheapest && <span style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', padding: '0.15rem 0.4rem', borderRadius: '4px', fontSize: '0.65rem', fontWeight: 'bold' }}>🏷️ Más Barato</span>}
-                                {res.isBestSeller && <span style={{ background: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', padding: '0.15rem 0.4rem', borderRadius: '4px', fontSize: '0.65rem', fontWeight: 'bold' }}>🔥 Más Vendido</span>}
+                                {res.discountPercentage > 0 && <span style={{ background: 'rgba(239, 68, 68, 0.2)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.4)', padding: '0.1rem 0.4rem', borderRadius: '4px', fontSize: '0.65rem', fontWeight: 'bold' }}>🔥 {res.discountPercentage}% OFF</span>}
+                                {res.isCheapest && <span style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', padding: '0.1rem 0.4rem', borderRadius: '4px', fontSize: '0.65rem', fontWeight: 'bold' }}>🏷️ Más Barato</span>}
+                                {res.shippingCostUSD === 0 && <span style={{ background: 'rgba(6, 182, 212, 0.15)', color: 'var(--accent-cyan)', padding: '0.1rem 0.4rem', borderRadius: '4px', fontSize: '0.65rem', fontWeight: 'bold' }}>🚚 Envío Gratis</span>}
+                                {res.isBestSeller && <span style={{ background: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b', padding: '0.1rem 0.4rem', borderRadius: '4px', fontSize: '0.65rem', fontWeight: 'bold' }}>⭐ Top Ventas</span>}
                               </div>
                               <a href={res.supplierUrl} target="_blank" rel="noreferrer" style={{ fontSize: '0.7rem', color: 'var(--accent-cyan)', display: 'flex', alignItems: 'center', gap: '0.1rem' }}>Ver original <ExternalLink size={10} /></a>
                             </div>
