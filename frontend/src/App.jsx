@@ -574,14 +574,17 @@ function App() {
       let extractedImages = [];
       let mainImage = '/images/default.svg';
 
-      // 1. Direct Mercado Libre extraction by ID or URL
-      const meliMatch = urlStr.match(/(MLA-?\d+|\b\d{8,12}\b)/i);
+      // 1. Direct Mercado Libre extraction ONLY if URL/text belongs to Mercado Libre
+      const isMeliUrl = urlStr.toLowerCase().includes('mercadolibre') || urlStr.toUpperCase().includes('MLA-') || urlStr.toUpperCase().startsWith('MLA');
       let targetMeliId = '';
       
-      if (meliMatch) {
-        const numbersOnly = meliMatch[1].replace(/[^0-9]/g, '');
-        if (numbersOnly.length >= 7) {
-          targetMeliId = `MLA${numbersOnly}`;
+      if (isMeliUrl) {
+        const meliMatch = urlStr.match(/(MLA-?\d+|\b\d{8,12}\b)/i);
+        if (meliMatch) {
+          const numbersOnly = meliMatch[1].replace(/[^0-9]/g, '');
+          if (numbersOnly.length >= 7) {
+            targetMeliId = `MLA${numbersOnly}`;
+          }
         }
       }
 

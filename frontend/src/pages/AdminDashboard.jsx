@@ -349,9 +349,9 @@ const AdminDashboard = ({
                 <label className="form-label" style={{ color: 'var(--accent-cyan)', fontWeight: 'bold' }}>⚡ Cargar por Enlace (AliExpress/Amazon/Alibaba)</label>
                 <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
                   <input 
-                    type="url" 
+                    type="text" 
                     className="form-input" 
-                    placeholder="Pega el link de la mercadería o máquina..."
+                    placeholder="Pega el link del producto (o escribe el nombre)..."
                     value={newProdSupplier}
                     onChange={(e) => setNewProdSupplier(e.target.value)}
                     style={{ flexGrow: 1 }}

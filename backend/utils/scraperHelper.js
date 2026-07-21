@@ -12,9 +12,9 @@ const fetchHtml = (targetUrl) => {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-        'Accept-Language': 'en-US,en;q=0.5',
+        'Accept-Language': 'es-ES,es;q=0.9,en-US;q=0.8,en;q=0.7',
       },
-      timeout: 3000 // 3 seconds timeout
+      timeout: 8000 // 8 seconds timeout
     };
 
     const req = client.get(targetUrl, options, (res) => {
@@ -66,67 +66,61 @@ const extractSpecifications = (html) => {
   return { weight, dimensions };
 };
 
-// Smart fallback generator based on keywords in URL
+// Smart fallback generator extracting real title from URL slug if fetch is blocked
 const getSmartMockData = (targetUrl) => {
   const lowercaseUrl = targetUrl.toLowerCase();
   
-  let keyword = 'gadget';
-  let title = 'Gadget Tecnológico Útil';
-  let description = 'Accesorio tecnológico inteligente de alta calidad para el día a día.';
-  let category = 'Gadgets';
-  let weight = '250 g';
-  let dimensions = '12 x 8 x 3 cm';
-  let cost = 3.50;
-  let image = '/images/default.svg';
+  let title = 'Producto Importado de Proveedor';
+  
+  // Extract title slug directly from AliExpress, Amazon or Mercado Libre URLs!
+  const slugMatch = targetUrl.match(/item\/\d+[-_]([^/?#]+)/i) || 
+                    targetUrl.match(/\/([a-zA-Z0-9._-]{10,})\/(?:dp|item)/i) ||
+                    targetUrl.match(/\/p\/([^/?#]+)/i);
+
+  if (slugMatch && slugMatch[1]) {
+    const rawSlug = slugMatch[1].replace(/[-_]/g, ' ').replace(/\.html?$/i, '').trim();
+    if (rawSlug.length > 3 && !rawSlug.includes('undefined')) {
+      title = rawSlug.charAt(0).toUpperCase() + rawSlug.slice(1);
+    }
+  }
+
+  let description = `Producto importado de alta calidad procesado desde el enlace directo: ${targetUrl}`;
+  let category = 'Otros';
+  let weight = '300 g';
+  let dimensions = '15 x 10 x 5 cm';
+  let cost = 4.50;
+  let image = 'https://images.unsplash.com/photo-1577705998148-6da4f3963bc8?auto=format&fit=crop&w=400&q=80';
 
   if (lowercaseUrl.includes('humidificador') || lowercaseUrl.includes('humidifier')) {
-    title = 'Humidificador Ultrasónico Inteligente USB';
-    description = 'Mini difusor de niebla con luces de respiración LED. Depósito de agua silencioso e ideal para escritorios de trabajo.';
-    category = 'Smart Home';
+    if (title === 'Producto Importado de Proveedor') title = 'Humidificador Ultrasónico Inteligente USB';
+    description = 'Mini difusor de niebla con luces LED. Depósito silencioso ideal para dormitorios y escritorios de trabajo.';
+    category = 'Tecnología';
     weight = '180 g';
     dimensions = '14 x 9 x 9 cm';
     cost = 4.20;
-    image = '/images/humidifier.svg';
+    image = 'https://images.unsplash.com/photo-1519183071298-a2962feb14f4?auto=format&fit=crop&w=400&q=80';
   } else if (lowercaseUrl.includes('ventilador') || lowercaseUrl.includes('fan') || lowercaseUrl.includes('cuello')) {
-    title = 'Mini Ventilador Portátil de Cuello USB';
-    description = 'Ventilador manos libres silencioso con flujo de aire de 360 grados y batería recargable integrada.';
-    category = 'Gadgets';
+    if (title === 'Producto Importado de Proveedor') title = 'Mini Ventilador Portátil de Cuello USB';
+    description = 'Ventilador manos libres silencioso con flujo de aire de 360 grados y batería recargable de larga duración.';
+    category = 'Tecnología';
     weight = '260 g';
     dimensions = '21 x 18 x 6 cm';
     cost = 7.10;
-    image = '/images/neck_fan.svg';
+    image = 'https://images.unsplash.com/photo-1622322482424-65d838df2c4e?auto=format&fit=crop&w=400&q=80';
   } else if (lowercaseUrl.includes('cargador') || lowercaseUrl.includes('charger') || lowercaseUrl.includes('qi')) {
-    title = 'Cargador Inalámbrico Rápido Qi 15W Slim';
+    if (title === 'Producto Importado de Proveedor') title = 'Cargador Inalámbrico Rápido Qi 15W Slim';
     description = 'Base de carga rápida inalámbrica antideslizante con indicador de estado LED inteligente y protección térmica.';
-    category = 'Accesorios';
+    category = 'Tecnología';
     weight = '95 g';
     dimensions = '10 x 10 x 0.8 cm';
     cost = 3.90;
-    image = '/images/wireless_charger.svg';
-  } else if (lowercaseUrl.includes('enchufe') || lowercaseUrl.includes('plug') || lowercaseUrl.includes('smart')) {
-    title = 'Enchufe Inteligente Wifi Smart Plug';
-    description = 'Smart plug con temporizador y medición de consumo de energía. Control remoto mediante aplicación móvil.';
-    category = 'Smart Home';
-    weight = '110 g';
-    dimensions = '8.5 x 5 x 5 cm';
-    cost = 5.80;
-    image = '/images/smart_plug.svg';
-  } else if (lowercaseUrl.includes('balanza') || lowercaseUrl.includes('scale')) {
-    title = 'Balanza de Cocina Digital de Precisión';
-    description = 'Báscula para pesar ingredientes con exactitud de décima de gramo. Superficie de acero inoxidable lavable.';
-    category = 'Hogar & Cocina';
-    weight = '420 g';
-    dimensions = '20 x 16 x 2.5 cm';
-    cost = 3.80;
-    image = '/images/scale.svg';
-  } else if (lowercaseUrl.includes('aspiradora') || lowercaseUrl.includes('vacuum')) {
-    title = 'Mini Aspiradora Inalámbrica Recargable';
-    description = 'Aspiradora de mano ligera con excelente potencia de succión para teclados, computadoras, y automóviles.';
-    category = 'Gadgets';
-    weight = '380 g';
-    dimensions = '16 x 14 x 6 cm';
-    cost = 8.10;
-    image = '/images/mini_vacuum.svg';
+    image = 'https://images.unsplash.com/photo-1622445262465-2481c4574875?auto=format&fit=crop&w=400&q=80';
+  } else if (lowercaseUrl.includes('campera') || lowercaseUrl.includes('ropa') || lowercaseUrl.includes('jacket') || lowercaseUrl.includes('buzo')) {
+    category = 'Vestimenta';
+    image = 'https://images.unsplash.com/photo-1591047139829-d91aecb6caea?auto=format&fit=crop&w=400&q=80';
+  } else if (lowercaseUrl.includes('taladro') || lowercaseUrl.includes('herramienta') || lowercaseUrl.includes('tool') || lowercaseUrl.includes('maquina')) {
+    category = 'Maquinaria y Herramientas';
+    image = 'https://images.unsplash.com/photo-1504148455328-c376907d081c?auto=format&fit=crop&w=400&q=80';
   }
 
   return {
@@ -138,6 +132,7 @@ const getSmartMockData = (targetUrl) => {
     weight,
     dimensions,
     image,
+    images: [image],
     supplierUrl: targetUrl,
     shippingCostUSD: 0.0,
     deliveryDays: targetUrl.toLowerCase().includes('amazon') ? 8 : 15
@@ -149,44 +144,53 @@ const scrapeUrl = async (targetUrl) => {
   try {
     const html = await fetchHtml(targetUrl);
     
-    // Parse using RegExp
-    const titleMatch = html.match(/<title>([^<]*)<\/title>/i);
-    let title = titleMatch ? titleMatch[1].trim() : '';
+    // Parse title using RegExp
+    const ogTitleMatch = html.match(/<meta\s+(?:property|name)=["']og:title["']\s+content=["']([^"']*)["']/i) ||
+                         html.match(/<meta\s+content=["']([^"']*)["']\s+(?:property|name)=["']og:title["']/i);
+    const titleTagMatch = html.match(/<title>([^<]*)<\/title>/i);
+    let title = ogTitleMatch ? ogTitleMatch[1].trim() : (titleTagMatch ? titleTagMatch[1].trim() : '');
 
-    const ogDescMatch = html.match(/<meta\s+property=["']og:description["']\s+content=["']([^"']*)["']/i);
+    // Parse description
+    const ogDescMatch = html.match(/<meta\s+(?:property|name)=["']og:description["']\s+content=["']([^"']*)["']/i) ||
+                        html.match(/<meta\s+content=["']([^"']*)["']\s+(?:property|name)=["']og:description["']/i);
     const metaDescMatch = html.match(/<meta\s+name=["']description["']\s+content=["']([^"']*)["']/i);
     let description = ogDescMatch ? ogDescMatch[1] : (metaDescMatch ? metaDescMatch[1] : '');
 
-    const ogImgMatch = html.match(/<meta\s+property=["']og:image["']\s+content=["']([^"']*)["']/i);
-    let image = ogImgMatch ? ogImgMatch[1] : '/images/default.svg';
+    // Parse main image
+    const ogImgMatch = html.match(/<meta\s+(?:property|name)=["']og:image["']\s+content=["']([^"']*)["']/i) ||
+                       html.match(/<meta\s+content=["']([^"']*)["']\s+(?:property|name)=["']og:image["']/i) ||
+                       html.match(/<link\s+rel=["']image_src["']\s+href=["']([^"']*)["']/i);
+    let image = ogImgMatch ? ogImgMatch[1].replace('http://', 'https://') : '';
 
     const { weight, dimensions } = extractSpecifications(html);
 
     // If titles or descriptions are blocked or captcha pages (AliExpress blocking standard requests)
     if (!title || title.toLowerCase().includes('cloudflare') || title.toLowerCase().includes('robot') || title.toLowerCase().includes('captcha')) {
-      return getSmartMockData(targetUrl);
+      const mockData = getSmartMockData(targetUrl);
+      if (image) mockData.image = image;
+      return mockData;
     }
 
-    // Clean up title (remove website names if present)
+    // Clean up title
     title = title.split(' - ')[0].split(' | ')[0];
 
     return {
-      title: title || 'Gadget Importado',
-      description: description || 'Detalles en el enlace del proveedor.',
-      category: 'Gadgets',
-      originalPrice: 4.50, // default placeholder cost
+      title: title || 'Producto Importado',
+      description: description || 'Detalles cargados desde el enlace oficial.',
+      category: 'Otros',
+      originalPrice: 4.50,
       stock: 50,
       weight,
       dimensions,
-      image,
+      image: image || 'https://images.unsplash.com/photo-1577705998148-6da4f3963bc8?auto=format&fit=crop&w=400&q=80',
+      images: [image || 'https://images.unsplash.com/photo-1577705998148-6da4f3963bc8?auto=format&fit=crop&w=400&q=80'],
       supplierUrl: targetUrl,
       shippingCostUSD: 0.0,
       deliveryDays: targetUrl.toLowerCase().includes('amazon') ? 8 : 15
     };
 
   } catch (error) {
-    // If request fails (offline, 403, DNS error, etc.), fall back to smart mock data based on URL text
-    console.log(`[SCRAPER FALLBACK] Fallo fetch real para ${targetUrl}. Usando mock inteligente.`);
+    console.log(`[SCRAPER FALLBACK] Usando extractor por slug para ${targetUrl}.`);
     return getSmartMockData(targetUrl);
   }
 };
