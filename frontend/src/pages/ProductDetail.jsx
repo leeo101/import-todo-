@@ -180,19 +180,22 @@ const ProductDetail = ({
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '1rem', fontSize: '0.85rem' }}>
                 <div>
                   <span style={{ color: 'var(--text-muted)', display: 'block', marginBottom: '0.2rem' }}>Costo Fábrica Original</span>
-                  <span style={{ fontWeight: 'bold', color: 'var(--text-main)' }}>USD ${originalUSD.toFixed(2)}</span>
+                  <span style={{ fontWeight: 'bold', color: 'var(--text-main)' }}>{new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 0 }).format(originalUSD * 1450)}</span>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block' }}>(USD ${originalUSD.toFixed(2)})</span>
                 </div>
                 <div>
                   <span style={{ color: 'var(--text-muted)', display: 'block', marginBottom: '0.2rem' }}>Flete Internacional ({supplierName})</span>
                   <span style={{ fontWeight: 'bold', color: shippingCostUSD === 0 ? 'var(--success)' : 'var(--text-main)' }}>
-                    {shippingCostUSD === 0 ? 'GRATIS 🚚' : `USD $${shippingCostUSD.toFixed(2)}`}
+                    {shippingCostUSD === 0 ? 'GRATIS 🚚' : new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 0 }).format(shippingCostUSD * 1450)}
                   </span>
+                  {shippingCostUSD > 0 && <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block' }}>(USD ${shippingCostUSD.toFixed(2)})</span>}
                 </div>
                 <div>
                   <span style={{ color: 'var(--text-muted)', display: 'block', marginBottom: '0.2rem' }}>Tasa Aduana Estimada (AFIP/ARCA)</span>
                   <span style={{ fontWeight: 'bold', color: estimatedCustomsUSD === 0 ? 'var(--success)' : 'var(--warning)' }}>
-                    {estimatedCustomsUSD === 0 ? 'Sin Cargo ($0)' : `USD $${estimatedCustomsUSD.toFixed(2)}`}
+                    {estimatedCustomsUSD === 0 ? 'Sin Cargo ($0 ARS)' : new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 0 }).format(estimatedCustomsUSD * 1450)}
                   </span>
+                  {estimatedCustomsUSD > 0 && <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block' }}>(USD ${estimatedCustomsUSD.toFixed(2)})</span>}
                 </div>
                 <div>
                   <span style={{ color: 'var(--text-muted)', display: 'block', marginBottom: '0.2rem' }}>Tiempo Estimado Entrega</span>

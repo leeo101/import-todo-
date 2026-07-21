@@ -398,19 +398,25 @@ const AdminDashboard = ({
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 <div className="form-group">
-                  <label className="form-label">Costo Fábrica (USD)</label>
+                  <label className="form-label">Costo Fábrica (USD ó ARS $)</label>
                   <input 
                     type="number" 
                     step="0.01" 
                     className="form-input" 
-                    placeholder="2.50"
+                    placeholder="Ej: 5.00 en USD"
                     value={newProdCost}
                     onChange={(e) => setNewProdCost(e.target.value)}
                     required
                   />
+                  {newProdCost && (
+                    <div style={{ fontSize: '0.75rem', marginTop: '0.35rem', color: 'var(--text-muted)', background: 'rgba(255,255,255,0.03)', padding: '0.4rem 0.6rem', borderRadius: '6px', border: '1px solid var(--border-light)' }}>
+                      <div>💵 Costo Base: <strong style={{ color: 'var(--text-main)' }}>{new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 0 }).format(parseFloat(newProdCost || 0) * (settings.usdToArsRate || 1450))} ARS</strong></div>
+                      <div>🏷️ Precio Venta (+{settings.marginPercentage}%): <strong style={{ color: 'var(--success)' }}>{new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 0 }).format(parseFloat(newProdCost || 0) * (1 + (settings.marginPercentage || 40) / 100) * (settings.usdToArsRate || 1450))} ARS</strong></div>
+                    </div>
+                  )}
                 </div>
                 <div className="form-group">
-                  <label className="form-label">Stock</label>
+                  <label className="form-label">Stock Disponible</label>
                   <input 
                     type="number" 
                     className="form-input" 
