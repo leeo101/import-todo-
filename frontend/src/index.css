@@ -1007,4 +1007,118 @@ body.light .cart-item {
   box-shadow: 0 8px 25px rgba(0, 240, 255, 0.4);
 }
 
+/* ========================================================= */
+/* 📱 MOBILE RESPONSIVE MEDIA QUERIES (< 768px)             */
+/* ========================================================= */
+@media (max-width: 768px) {
+  /* Container & Layout */
+  .container {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+  }
+
+  /* Admin Header Flex */
+  .admin-header-flex {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 1rem !important;
+  }
+
+  /* Metrics Cards Grid on Mobile */
+  .metrics-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0.75rem !important;
+  }
+
+  .metrics-card {
+    padding: 1rem !important;
+  }
+
+  .metrics-card-value {
+    font-size: 1.4rem !important;
+  }
+
+  /* Form Grids on Mobile */
+  .form-grid-2col, .form-grid-3col {
+    grid-template-columns: 1fr !important;
+    gap: 0.75rem !important;
+  }
+
+  /* Bulk Search Input */
+  .bulk-search-form {
+    flex-direction: column !important;
+  }
+
+  .bulk-search-form input,
+  .bulk-search-form button {
+    width: 100% !important;
+  }
+
+  /* Modals & Drawers on Mobile */
+  .modal-overlay {
+    padding: 0.5rem !important;
+  }
+
+  .modal-content {
+    padding: 1.5rem !important;
+    border-radius: 16px !important;
+    max-height: 94vh !important;
+    width: 100% !important;
+  }
+
+  .cart-drawer {
+    max-width: 100% !important;
+    padding: 1.25rem !important;
+  }
+
+  .sidebar-drawer {
+    max-width: 85% !important;
+  }
+
+  /* Chatbot window mobile */
+  .chatbot-window {
+    width: calc(100vw - 2rem) !important;
+    right: -1rem !important;
+    bottom: 75px !important;
+    height: 440px !important;
+  }
+
+  /* Table responsiveness & smooth scrolling */
+  .table-container {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    margin-left: -0.25rem;
+    margin-right: -0.25rem;
+  }
+
+  th, td {
+    padding: 0.6rem 0.4rem !important;
+    font-size: 0.8rem !important;
+  }
+
+  /* Product Cards Grid on Mobile */
+  .products-grid {
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)) !important;
+    gap: 1rem !important;
+  }
+
+  .product-card {
+    padding: 0.85rem !important;
+    border-radius: 16px !important;
+  }
+
+  .product-image-container {
+    height: 140px !important;
+    padding: 0.5rem !important;
+  }
+
+  .product-title {
+    font-size: 0.95rem !important;
+  }
+
+  .price-value {
+    font-size: 1.25rem !important;
+  }
+}
+
 

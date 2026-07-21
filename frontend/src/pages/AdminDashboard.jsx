@@ -56,9 +56,9 @@ const AdminDashboard = ({
 }) => {
   return (
     <main className="container" style={{ paddingTop: '3rem' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
+      <div className="admin-header-flex" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
         <h1 className="brand-font" style={{ fontSize: '2.2rem' }}>Panel de Control <span style={{ color: 'var(--accent-cyan)' }}>ImportTodo</span></h1>
-        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
           <button 
             onClick={handleSyncCatalog}
             disabled={isSyncingCatalog}
@@ -80,34 +80,34 @@ const AdminDashboard = ({
       </div>
 
       {/* Quick Metrics Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem', marginBottom: '3rem' }}>
-        <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-light)', borderRadius: '12px', padding: '1.5rem' }}>
-          <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>Ventas Facturadas</div>
-          <div style={{ fontSize: '2rem', fontWeight: 'bold', fontFamily: 'Outfit' }}>{new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 0 }).format(totalSales)}</div>
+      <div className="metrics-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1.25rem', marginBottom: '2.5rem' }}>
+        <div className="metrics-card" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-light)', borderRadius: '12px', padding: '1.25rem' }}>
+          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>Ventas Facturadas</div>
+          <div className="metrics-card-value" style={{ fontSize: '1.8rem', fontWeight: 'bold', fontFamily: 'Outfit' }}>{new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 0 }).format(totalSales)}</div>
         </div>
-        <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-light)', borderRadius: '12px', padding: '1.5rem', borderLeft: '4px solid var(--success)' }}>
-          <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>Ganancia Dropshipping</div>
-          <div style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--success)', fontFamily: 'Outfit' }}>{new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 0 }).format(totalProfit)}</div>
+        <div className="metrics-card" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-light)', borderRadius: '12px', padding: '1.25rem', borderLeft: '4px solid var(--success)' }}>
+          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>Ganancia Dropshipping</div>
+          <div className="metrics-card-value" style={{ fontSize: '1.8rem', fontWeight: 'bold', color: 'var(--success)', fontFamily: 'Outfit' }}>{new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 0 }).format(totalProfit)}</div>
         </div>
-        <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-light)', borderRadius: '12px', padding: '1.5rem', borderLeft: '4px solid var(--warning)' }}>
-          <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>Pedidos Pendientes</div>
-          <div style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--warning)', fontFamily: 'Outfit' }}>{pendingOrders}</div>
+        <div className="metrics-card" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-light)', borderRadius: '12px', padding: '1.25rem', borderLeft: '4px solid var(--warning)' }}>
+          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>Pedidos Pendientes</div>
+          <div className="metrics-card-value" style={{ fontSize: '1.8rem', fontWeight: 'bold', color: 'var(--warning)', fontFamily: 'Outfit' }}>{pendingOrders}</div>
         </div>
-        <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-light)', borderRadius: '12px', padding: '1.5rem' }}>
-          <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>Productos Activos</div>
-          <div style={{ fontSize: '2rem', fontWeight: 'bold', fontFamily: 'Outfit' }}>{products.length}</div>
+        <div className="metrics-card" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-light)', borderRadius: '12px', padding: '1.25rem' }}>
+          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>Productos Activos</div>
+          <div className="metrics-card-value" style={{ fontSize: '1.8rem', fontWeight: 'bold', fontFamily: 'Outfit' }}>{products.length}</div>
         </div>
       </div>
 
       {/* Bulk Supplier Live Importer Card */}
-      <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-light)', borderRadius: '12px', padding: '1.5rem', marginBottom: '2rem' }}>
-        <h2 style={{ fontSize: '1.25rem', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+      <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-light)', borderRadius: '12px', padding: '1.25rem', marginBottom: '2rem' }}>
+        <h2 style={{ fontSize: '1.2rem', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           <Sparkles size={20} style={{ color: 'var(--accent-cyan)' }} /> Importador Masivo en Vivo (Alibaba, AliExpress, Mercado Libre, Amazon)
         </h2>
         <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1.25rem' }}>
           Busca mercaderías, herramientas o comestibles económicos en vivo en las APIs de proveedores e impórtalos directamente al catálogo con un solo click.
         </p>
-        <form onSubmit={handleBulkSearch} style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem' }}>
+        <form onSubmit={handleBulkSearch} className="bulk-search-form" style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
           <input 
             type="text" 
             className="form-input" 
