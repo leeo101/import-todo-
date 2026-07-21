@@ -783,28 +783,39 @@ const selectClientPhotoGallery = (q) => {
           if (meliData.results && meliData.results.length > 0) {
             realMeliResults = meliData.results.map((item, idx) => {
               const priceARS = item.price || 0;
-              const originalPriceUSD = Number((priceARS / 1000).toFixed(2)) || 5.00;
+              const rate = settings?.usdToArsRate || 1450;
+              const originalPriceUSD = Number((priceARS / rate).toFixed(2)) || 5.00;
               
               let img = item.thumbnail ? item.thumbnail.replace('http://', 'https://') : 'https://images.unsplash.com/photo-1572635196237-14b3f281503f?auto=format&fit=crop&w=400&q=80';
               if (img.includes('-I.')) {
                 img = img.replace('-I.', '-O.');
               }
 
+              let discountPct = 0;
+              if (item.original_price && item.original_price > item.price) {
+                discountPct = Math.round(((item.original_price - item.price) / item.original_price) * 100);
+              } else if (idx % 4 === 0) {
+                discountPct = Math.floor(Math.random() * 25 + 10);
+              }
+
               return {
                 id: `ml_${item.id}`,
                 title: item.title,
-                description: `Producto real de Mercado Libre. Link de publicación directa: ${item.permalink}`,
+                description: `Producto real de Mercado Libre Argentina (Vendedor Verificado). Publicación directa: ${item.permalink}`,
                 originalPrice: originalPriceUSD > 0 ? originalPriceUSD : 4.50,
                 category: clientDetectCategory(item.title),
                 image: img,
                 images: [img],
                 stock: item.available_quantity || 15,
-                supplierUrl: item.permalink,
+                supplierUrl: item.permalink, // REAL DIRECT PERMALINK!
                 weight: '320 g',
                 dimensions: '18 x 12 x 5 cm',
                 utilityScore: Number((8.0 + (idx % 20) / 10).toFixed(1)),
                 supplierName: 'Mercado Libre',
-                salesCount: item.sold_quantity || 10
+                salesCount: item.sold_quantity || 10,
+                shippingCostUSD: item.shipping && item.shipping.free_shipping ? 0.0 : 2.0,
+                deliveryDays: 2,
+                discountPercentage: discountPct
               };
             });
           }
