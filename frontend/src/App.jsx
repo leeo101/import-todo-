@@ -557,7 +557,7 @@ function App() {
   // Scrape link function with full HD image gallery and live API detail extraction
   const handleAutoScrape = async () => {
     if (!newProdSupplier || !newProdSupplier.trim()) {
-      showToast("Por favor pega primero la URL del proveedor en el campo correspondiente.");
+      showToast("Por favor pega primero la URL o nombre del producto en el campo correspondiente.", 'warning');
       return;
     }
 
@@ -574,93 +574,127 @@ function App() {
       let extractedImages = [];
       let mainImage = '/images/default.svg';
 
-      // 1. Direct Mercado Libre client-side extraction for high-resolution images & details
-      const meliMatch = urlStr.match(/(MLA-?\d+)/i);
-      if (meliMatch || urlStr.includes('mercadolibre.')) {
-        try {
-          const rawId = meliMatch ? meliMatch[1].replace('-', '') : '';
-          if (rawId) {
-            console.log(`[CLIENT SCRAPE] Consultando API oficial de Mercado Libre para: ${rawId}`);
-            const itemRes = await fetch(`https://api.mercadolibre.com/items/${rawId}`);
-            if (itemRes.ok) {
-              const itemData = await itemRes.json();
-              extractedTitle = itemData.title || '';
-              extractedCategory = clientDetectCategory(itemData.title);
-              
-              if (itemData.pictures && itemData.pictures.length > 0) {
-                extractedImages = itemData.pictures.map(pic => {
-                  let u = pic.secure_url || pic.url;
-                  if (u.includes('-I.')) u = u.replace('-I.', '-O.');
-                  return u.replace('http://', 'https://');
-                });
-                mainImage = extractedImages[0];
-              }
-
-              if (itemData.price) {
-                const usdRate = settings.usdToArsRate || 1450;
-                extractedCost = Number((itemData.price / usdRate).toFixed(2)).toString();
-              }
-              if (itemData.available_quantity) {
-                extractedStock = itemData.available_quantity.toString();
-              }
-
-              if (itemData.attributes) {
-                let specText = "\n\nEspecificaciones Técnicas:\n";
-                itemData.attributes.forEach(attr => {
-                  if (attr.name && attr.value_name) {
-                    specText += `- ${attr.name}: ${attr.value_name}\n`;
-                  }
-                  if (attr.id === 'PACKAGE_WEIGHT' || attr.id === 'WEIGHT') extractedWeight = attr.value_name;
-                });
-                const hAttr = itemData.attributes.find(a => a.id === 'PACKAGE_HEIGHT');
-                const wAttr = itemData.attributes.find(a => a.id === 'PACKAGE_WIDTH');
-                const lAttr = itemData.attributes.find(a => a.id === 'PACKAGE_LENGTH');
-                if (hAttr?.value_name && wAttr?.value_name && lAttr?.value_name) {
-                  extractedDimensions = `${lAttr.value_name} x ${wAttr.value_name} x ${hAttr.value_name}`;
-                }
-                extractedDesc += specText;
-              }
-
-              // Fetch detailed text description
-              try {
-                const descRes = await fetch(`https://api.mercadolibre.com/items/${rawId}/description`);
-                if (descRes.ok) {
-                  const descData = await descRes.json();
-                  const plainDesc = descData.plain_text || descData.text || '';
-                  extractedDesc = plainDesc + (extractedDesc ? '\n' + extractedDesc : '');
-                }
-              } catch (e) {}
-            }
-          }
-        } catch (e) {
-          console.warn("Mercado libre client-side scrape warning:", e);
+      // 1. Direct Mercado Libre extraction by ID or URL
+      const meliMatch = urlStr.match(/(MLA-?\d+|\b\d{8,12}\b)/i);
+      let targetMeliId = '';
+      
+      if (meliMatch) {
+        const numbersOnly = meliMatch[1].replace(/[^0-9]/g, '');
+        if (numbersOnly.length >= 7) {
+          targetMeliId = `MLA${numbersOnly}`;
         }
       }
 
-      // If client-side didn't fill description or title, query backend /api/scrape-link
-      if (!extractedTitle || !mainImage || mainImage === '/images/default.svg') {
-        const response = await fetch(`${BACKEND_URL}/scrape-link`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ url: urlStr })
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          if (!extractedTitle) extractedTitle = data.title || '';
-          if (!extractedDesc) extractedDesc = data.description || '';
-          if (!extractedCategory) extractedCategory = data.category || clientDetectCategory(extractedTitle);
-          if (extractedCost === '5.00' && data.originalPrice) extractedCost = data.originalPrice.toString();
-          if (data.weight) extractedWeight = data.weight;
-          if (data.dimensions) extractedDimensions = data.dimensions;
-          
-          if (data.images && data.images.length > 0) {
-            extractedImages = data.images;
-            mainImage = extractedImages[0];
-          } else if (data.image) {
-            mainImage = data.image;
-            extractedImages = [data.image];
+      // If not a direct ID, but looks like a text query or ML search, search top result
+      if (!targetMeliId && (urlStr.includes('mercadolibre') || !urlStr.startsWith('http'))) {
+        try {
+          const searchRes = await fetch(`https://api.mercadolibre.com/sites/MLA/search?q=${encodeURIComponent(urlStr)}&limit=1`);
+          if (searchRes.ok) {
+            const searchData = await searchRes.json();
+            if (searchData.results && searchData.results.length > 0) {
+              targetMeliId = searchData.results[0].id;
+            }
           }
+        } catch (err) {
+          console.warn("Mercado Libre text search failed in auto-scrape:", err);
+        }
+      }
+
+      if (targetMeliId) {
+        try {
+          console.log(`[AUTO-SCRAPE] Consultando API oficial Mercado Libre para item: ${targetMeliId}`);
+          const itemRes = await fetch(`https://api.mercadolibre.com/items/${targetMeliId}`);
+          if (itemRes.ok) {
+            const itemData = await itemRes.json();
+            extractedTitle = itemData.title || '';
+            extractedCategory = clientDetectCategory(itemData.title);
+            
+            if (itemData.pictures && itemData.pictures.length > 0) {
+              extractedImages = itemData.pictures.map(pic => {
+                let u = pic.secure_url || pic.url || '';
+                if (u.includes('-I.')) u = u.replace('-I.', '-V.');
+                return u.replace('http://', 'https://');
+              });
+              mainImage = extractedImages[0];
+            } else if (itemData.thumbnail) {
+              let t = itemData.thumbnail.replace('http://', 'https://');
+              if (itemData.thumbnail_id) {
+                t = `https://http2.mlstatic.com/D_NQ_NP_${itemData.thumbnail_id}-V.webp`;
+              } else if (t.includes('-I.')) {
+                t = t.replace('-I.', '-V.');
+              }
+              mainImage = t;
+              extractedImages = [t];
+            }
+
+            if (itemData.price) {
+              const usdRate = settings?.usdToArsRate || 1450;
+              extractedCost = Number((itemData.price / usdRate).toFixed(2)).toString();
+            }
+            if (itemData.available_quantity) {
+              extractedStock = itemData.available_quantity.toString();
+            }
+
+            if (itemData.attributes) {
+              let specText = "\n\nEspecificaciones Técnicas:\n";
+              itemData.attributes.forEach(attr => {
+                if (attr.name && attr.value_name) {
+                  specText += `- ${attr.name}: ${attr.value_name}\n`;
+                }
+                if (attr.id === 'PACKAGE_WEIGHT' || attr.id === 'WEIGHT') extractedWeight = attr.value_name;
+              });
+              const hAttr = itemData.attributes.find(a => a.id === 'PACKAGE_HEIGHT');
+              const wAttr = itemData.attributes.find(a => a.id === 'PACKAGE_WIDTH');
+              const lAttr = itemData.attributes.find(a => a.id === 'PACKAGE_LENGTH');
+              if (hAttr?.value_name && wAttr?.value_name && lAttr?.value_name) {
+                extractedDimensions = `${lAttr.value_name} x ${wAttr.value_name} x ${hAttr.value_name}`;
+              }
+              extractedDesc += specText;
+            }
+
+            // Fetch detailed text description
+            try {
+              const descRes = await fetch(`https://api.mercadolibre.com/items/${targetMeliId}/description`);
+              if (descRes.ok) {
+                const descData = await descRes.json();
+                const plainDesc = descData.plain_text || descData.text || '';
+                extractedDesc = plainDesc + (extractedDesc ? '\n' + extractedDesc : '');
+              }
+            } catch (e) {}
+          }
+        } catch (e) {
+          console.warn("Mercado Libre client-side scrape warning:", e);
+        }
+      }
+
+      // 2. If title or image not filled, query backend /api/scrape-link for external supplier links
+      if ((!extractedTitle || !mainImage || mainImage === '/images/default.svg') && urlStr.startsWith('http')) {
+        try {
+          const response = await fetch(`${BACKEND_URL}/scrape-link`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ url: urlStr })
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            if (!extractedTitle) extractedTitle = data.title || '';
+            if (!extractedDesc) extractedDesc = data.description || '';
+            if (!extractedCategory) extractedCategory = data.category || clientDetectCategory(extractedTitle);
+            if (extractedCost === '5.00' && data.originalPrice) extractedCost = data.originalPrice.toString();
+            if (data.weight) extractedWeight = data.weight;
+            if (data.dimensions) extractedDimensions = data.dimensions;
+            
+            if (data.images && data.images.length > 0) {
+              extractedImages = data.images;
+              mainImage = extractedImages[0];
+            } else if (data.image) {
+              mainImage = data.image;
+              extractedImages = [data.image];
+            }
+          }
+        } catch (backendErr) {
+          console.warn("Backend scrape-link error:", backendErr);
         }
       }
 
@@ -787,8 +821,10 @@ const selectClientPhotoGallery = (q) => {
               const originalPriceUSD = Number((priceARS / rate).toFixed(2)) || 5.00;
               
               let img = item.thumbnail ? item.thumbnail.replace('http://', 'https://') : 'https://images.unsplash.com/photo-1572635196237-14b3f281503f?auto=format&fit=crop&w=400&q=80';
-              if (img.includes('-I.')) {
-                img = img.replace('-I.', '-O.');
+              if (item.thumbnail_id) {
+                img = `https://http2.mlstatic.com/D_NQ_NP_${item.thumbnail_id}-V.webp`;
+              } else if (img.includes('-I.')) {
+                img = img.replace('-I.', '-V.');
               }
 
               let discountPct = 0;

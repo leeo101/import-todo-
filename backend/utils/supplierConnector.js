@@ -143,12 +143,20 @@ const parseShippingAndDelivery = (item, provider) => {
   return { shippingCostUSD, deliveryDays };
 };
 
-// Clean image URLs from Mercado Libre and force HTTPS/High-Res
-const getHighResMeliImage = (thumbnailUrl) => {
-  if (!thumbnailUrl) return 'https://images.unsplash.com/photo-1542496658-e33a6d0d50f6?auto=format&fit=crop&w=400&q=80';
-  let img = thumbnailUrl.replace('http://', 'https://');
+// Clean image URLs from Mercado Libre and force HTTPS/High-Res real product photos
+const getHighResMeliImage = (item) => {
+  if (!item) return 'https://images.unsplash.com/photo-1542496658-e33a6d0d50f6?auto=format&fit=crop&w=400&q=80';
+  const rawUrl = typeof item === 'string' ? item : (item.thumbnail || (item.pictures && item.pictures[0] && item.pictures[0].url) || '');
+  if (!rawUrl) return 'https://images.unsplash.com/photo-1542496658-e33a6d0d50f6?auto=format&fit=crop&w=400&q=80';
+
+  let img = rawUrl.replace('http://', 'https://');
+
+  if (typeof item === 'object' && item.thumbnail_id) {
+    return `https://http2.mlstatic.com/D_NQ_NP_${item.thumbnail_id}-V.webp`;
+  }
+
   if (img.includes('-I.')) {
-    img = img.replace('-I.', '-O.');
+    img = img.replace('-I.', '-V.');
   }
   return img;
 };
@@ -491,7 +499,7 @@ const searchMercadoLibre = async (query) => {
       const originalPriceUSD = Number((priceARS / 1450).toFixed(2)) || 5.00;
       const salesCount = item.sold_quantity || (50 - idx > 0 ? 50 - idx : 5);
       
-      const mainImage = getHighResMeliImage(item.thumbnail);
+      const mainImage = getHighResMeliImage(item);
       const shipInfo = parseShippingAndDelivery(item, 'Mercado Libre');
 
       let discountPct = 0;

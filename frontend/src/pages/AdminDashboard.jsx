@@ -263,7 +263,7 @@ const AdminDashboard = ({
                         </td>
                         <td style={{ padding: '0.75rem', borderBottom: '1px solid var(--border-light)' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            <img src={res.image} alt={res.title} style={{ width: '40px', height: '40px', borderRadius: '4px', objectFit: 'contain', background: '#fff', padding: '2px', flexShrink: 0 }} onError={(e) => { e.target.src = '/images/default.svg' }} />
+                            <img src={res.image} alt={res.title} style={{ width: '40px', height: '40px', borderRadius: '4px', objectFit: 'contain', background: '#fff', padding: '2px', flexShrink: 0 }} onError={(e) => { e.target.src = res.image.replace('-V.webp', '-I.jpg').replace('-O.jpg', '-I.jpg'); }} />
                             <div>
                               <div style={{ fontWeight: '600', fontSize: '0.9rem', maxWidth: '340px', display: 'flex', alignItems: 'center', gap: '0.35rem', flexWrap: 'wrap' }} title={res.title}>
                                 {res.title}
