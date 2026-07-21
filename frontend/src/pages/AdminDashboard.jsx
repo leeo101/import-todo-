@@ -487,7 +487,12 @@ const AdminDashboard = ({
                         onClick={() => setNewProdImage(imgUrl)}
                         title="Haz click para definir como foto de portada"
                       >
-                        <img src={imgUrl} alt={`Foto ${idx+1}`} style={{ width: '52px', height: '52px', objectFit: 'contain' }} />
+                        <img 
+                          src={imgUrl} 
+                          alt={`Foto ${idx+1}`} 
+                          style={{ width: '52px', height: '52px', objectFit: 'contain' }}
+                          onError={(e) => { e.target.onerror = null; e.target.src = 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=400&q=80'; }}
+                        />
                         {newProdImage === imgUrl && (
                           <span style={{ position: 'absolute', top: '-6px', right: '-6px', background: 'var(--accent-cyan)', color: '#000', borderRadius: '50%', width: '18px', height: '18px', fontSize: '11px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>✓</span>
                         )}

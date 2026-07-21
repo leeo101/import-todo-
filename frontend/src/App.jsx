@@ -670,34 +670,114 @@ function App() {
         }
       }
 
-      // 2. If title or image not filled, query backend /api/scrape-link for external supplier links
+      // 2. Client-side web scraper via CORS proxy for external supplier links (AliExpress, Amazon, Alibaba, Temu, etc.)
       if ((!extractedTitle || !mainImage || mainImage === '/images/default.svg') && urlStr.startsWith('http')) {
         try {
-          const response = await fetch(`${BACKEND_URL}/scrape-link`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ url: urlStr })
-          });
+          console.log(`[CLIENT SCRAPE] Escaneando enlace externo: ${urlStr}`);
+          
+          // Try backend scrape-link endpoint first if online
+          let scrapedData = null;
+          try {
+            const response = await fetch(`${BACKEND_URL}/scrape-link`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ url: urlStr })
+            });
+            if (response.ok) {
+              scrapedData = await response.json();
+            }
+          } catch (e) {
+            console.warn("Backend not available, trying client-side CORS proxy...");
+          }
 
-          if (response.ok) {
-            const data = await response.json();
-            if (!extractedTitle) extractedTitle = data.title || '';
-            if (!extractedDesc) extractedDesc = data.description || '';
-            if (!extractedCategory) extractedCategory = data.category || clientDetectCategory(extractedTitle);
-            if (extractedCost === '5.00' && data.originalPrice) extractedCost = data.originalPrice.toString();
-            if (data.weight) extractedWeight = data.weight;
-            if (data.dimensions) extractedDimensions = data.dimensions;
-            
-            if (data.images && data.images.length > 0) {
-              extractedImages = data.images;
+          // If backend didn't return data, fetch HTML directly via client CORS proxy
+          if (!scrapedData || !scrapedData.title || scrapedData.title === 'Gadget Importado') {
+            const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(urlStr)}`;
+            const htmlRes = await fetch(proxyUrl);
+            if (htmlRes.ok) {
+              const htmlText = await htmlRes.text();
+              
+              // Extract OG Title
+              const ogTitleMatch = htmlText.match(/<meta\s+(?:property|name)=["']og:title["']\s+content=["']([^"']*)["']/i) ||
+                                   htmlText.match(/<meta\s+content=["']([^"']*)["']\s+(?:property|name)=["']og:title["']/i) ||
+                                   htmlText.match(/<title>([^<]*)<\/title>/i);
+              if (ogTitleMatch && ogTitleMatch[1]) {
+                extractedTitle = ogTitleMatch[1].replace(/ - AliExpress.*/i, '').replace(/ - Amazon.*/i, '').trim();
+              }
+
+              // Extract OG Image
+              const ogImgMatch = htmlText.match(/<meta\s+(?:property|name)=["']og:image["']\s+content=["']([^"']*)["']/i) ||
+                                 htmlText.match(/<meta\s+content=["']([^"']*)["']\s+(?:property|name)=["']og:image["']/i) ||
+                                 htmlText.match(/<link\s+rel=["']image_src["']\s+href=["']([^"']*)["']/i);
+              if (ogImgMatch && ogImgMatch[1]) {
+                let imgUrl = ogImgMatch[1].replace('http://', 'https://');
+                if (!imgUrl.startsWith('http')) imgUrl = 'https:' + imgUrl;
+                mainImage = imgUrl;
+                extractedImages = [imgUrl];
+              }
+
+              // Extract OG Description
+              const ogDescMatch = htmlText.match(/<meta\s+(?:property|name)=["']og:description["']\s+content=["']([^"']*)["']/i) ||
+                                  htmlText.match(/<meta\s+content=["']([^"']*)["']\s+(?:property|name)=["']og:description["']/i);
+              if (ogDescMatch && ogDescMatch[1]) {
+                extractedDesc = ogDescMatch[1].trim();
+              }
+            }
+          } else {
+            extractedTitle = scrapedData.title || extractedTitle;
+            extractedDesc = scrapedData.description || extractedDesc;
+            extractedCategory = scrapedData.category || extractedCategory;
+            if (scrapedData.originalPrice) extractedCost = scrapedData.originalPrice.toString();
+            if (scrapedData.weight) extractedWeight = scrapedData.weight;
+            if (scrapedData.dimensions) extractedDimensions = scrapedData.dimensions;
+            if (scrapedData.images && scrapedData.images.length > 0) {
+              extractedImages = scrapedData.images;
               mainImage = extractedImages[0];
-            } else if (data.image) {
-              mainImage = data.image;
-              extractedImages = [data.image];
+            } else if (scrapedData.image) {
+              mainImage = scrapedData.image;
+              extractedImages = [scrapedData.image];
             }
           }
         } catch (backendErr) {
-          console.warn("Backend scrape-link error:", backendErr);
+          console.warn("Client-side scrape error:", backendErr);
+        }
+      }
+
+      // 3. Extract title slug from URL path if title is still empty
+      if (!extractedTitle || extractedTitle === 'Producto Importado') {
+        const slugMatch = urlStr.match(/item\/\d+[-_]([^/?#]+)/i) || 
+                          urlStr.match(/\/([a-zA-Z0-9._-]{10,})\/(?:dp|item)/i) ||
+                          urlStr.match(/\/p\/([^/?#]+)/i);
+
+        if (slugMatch && slugMatch[1]) {
+          const rawSlug = slugMatch[1].replace(/[-_]/g, ' ').replace(/\.html?$/i, '').trim();
+          if (rawSlug.length > 3 && !rawSlug.includes('undefined')) {
+            extractedTitle = rawSlug.charAt(0).toUpperCase() + rawSlug.slice(1);
+          }
+        }
+      }
+
+      // 4. If title is known, search Mercado Libre API to grab REAL matching product images & specs!
+      if (extractedTitle && (!extractedImages.length || mainImage === '/images/default.svg')) {
+        try {
+          const searchRes = await fetch(`https://api.mercadolibre.com/sites/MLA/search?q=${encodeURIComponent(extractedTitle)}&limit=1`);
+          if (searchRes.ok) {
+            const searchData = await searchRes.json();
+            if (searchData.results && searchData.results.length > 0) {
+              const topItem = searchData.results[0];
+              if (topItem.thumbnail_id) {
+                const hdImg = `https://http2.mlstatic.com/D_NQ_NP_${topItem.thumbnail_id}-V.webp`;
+                mainImage = hdImg;
+                extractedImages = [hdImg];
+              }
+              if (topItem.price && extractedCost === '5.00') {
+                const usdRate = settings?.usdToArsRate || 1450;
+                extractedCost = Number((topItem.price / usdRate).toFixed(2)).toString();
+              }
+            }
+          }
+        } catch (e) {
+          console.warn("ML search fallback for images failed:", e);
         }
       }
 
@@ -728,44 +808,39 @@ function App() {
 
 const CLIENT_PHOTO_GALLERIES = {
   Glasses: [
-    "https://images.unsplash.com/photo-1572635196237-14b3f281503f?auto=format&fit=crop&w=400&q=80",
-    "https://images.unsplash.com/photo-1511499767150-a48a237f0083?auto=format&fit=crop&w=400&q=80",
-    "https://images.unsplash.com/photo-1508296695146-257a814070b4?auto=format&fit=crop&w=400&q=80",
-    "https://images.unsplash.com/photo-1577803645773-f96470509666?auto=format&fit=crop&w=400&q=80",
-    "https://images.unsplash.com/photo-1473496169904-658ba7c44d8a?auto=format&fit=crop&w=400&q=80",
-    "https://images.unsplash.com/photo-1589782182703-2aaa69037b5b?auto=format&fit=crop&w=400&q=80"
+    "https://images.unsplash.com/photo-1572635196237-14b3f281503f?auto=format&fit=crop&w=600&q=80",
+    "https://images.unsplash.com/photo-1511499767150-a48a237f0083?auto=format&fit=crop&w=600&q=80",
+    "https://images.unsplash.com/photo-1508296695146-257a814070b4?auto=format&fit=crop&w=600&q=80"
   ],
   Clothing: [
-    "https://images.unsplash.com/photo-1591047139829-d91aecb6caea?auto=format&fit=crop&w=400&q=80",
-    "https://images.unsplash.com/photo-1544441893-675973e31985?auto=format&fit=crop&w=400&q=80",
-    "https://images.unsplash.com/photo-1551028719-00167b16eac5?auto=format&fit=crop&w=400&q=80",
-    "https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=400&q=80"
+    "https://images.unsplash.com/photo-1591047139829-d91aecb6caea?auto=format&fit=crop&w=600&q=80",
+    "https://images.unsplash.com/photo-1544441893-675973e31985?auto=format&fit=crop&w=600&q=80",
+    "https://images.unsplash.com/photo-1551028719-00167b16eac5?auto=format&fit=crop&w=600&q=80"
   ],
   Tech: [
-    "https://images.unsplash.com/photo-1508685096489-7aacd43bd3b1?auto=format&fit=crop&w=400&q=80",
-    "https://images.unsplash.com/photo-1590658268037-6bf12165a8df?auto=format&fit=crop&w=400&q=80",
-    "https://images.unsplash.com/photo-1608043152269-423dbba4e7e1?auto=format&fit=crop&w=400&q=80",
-    "https://images.unsplash.com/photo-1593508512255-86ab42a8e620?auto=format&fit=crop&w=400&q=80"
+    "https://images.unsplash.com/photo-1508685096489-7aacd43bd3b1?auto=format&fit=crop&w=600&q=80",
+    "https://images.unsplash.com/photo-1590658268037-6bf12165a8df?auto=format&fit=crop&w=600&q=80",
+    "https://images.unsplash.com/photo-1583394838336-acd977736f90?auto=format&fit=crop&w=600&q=80"
   ],
   Tools: [
-    "https://images.unsplash.com/photo-1504148455328-c376907d081c?auto=format&fit=crop&w=400&q=80",
-    "https://images.unsplash.com/photo-1581166397057-235af2b3c6dd?auto=format&fit=crop&w=400&q=80",
-    "https://images.unsplash.com/photo-1572981779307-38b8cabb2407?auto=format&fit=crop&w=400&q=80"
+    "https://images.unsplash.com/photo-1504148455328-c376907d081c?auto=format&fit=crop&w=600&q=80",
+    "https://images.unsplash.com/photo-1581166397057-235af2b3c6dd?auto=format&fit=crop&w=600&q=80",
+    "https://images.unsplash.com/photo-1572981779307-38b8cabb2407?auto=format&fit=crop&w=600&q=80"
   ],
   Home: [
-    "https://images.unsplash.com/photo-1519183071298-a2962feb14f4?auto=format&fit=crop&w=400&q=80",
-    "https://images.unsplash.com/photo-1585672803875-520a02efdb4a?auto=format&fit=crop&w=400&q=80",
-    "https://images.unsplash.com/photo-1606115915090-be18fea23ce7?auto=format&fit=crop&w=400&q=80"
+    "https://images.unsplash.com/photo-1519183071298-a2962feb14f4?auto=format&fit=crop&w=600&q=80",
+    "https://images.unsplash.com/photo-1585672803875-520a02efdb4a?auto=format&fit=crop&w=600&q=80",
+    "https://images.unsplash.com/photo-1606115915090-be18fea23ce7?auto=format&fit=crop&w=600&q=80"
   ],
   Food: [
-    "https://images.unsplash.com/photo-1586190848861-99aa4a171e90?auto=format&fit=crop&w=400&q=80",
-    "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=400&q=80",
-    "https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=400&q=80"
+    "https://images.unsplash.com/photo-1586190848861-99aa4a171e90?auto=format&fit=crop&w=600&q=80",
+    "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=600&q=80",
+    "https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=600&q=80"
   ],
   General: [
-    "https://images.unsplash.com/photo-1577705998148-6da4f3963bc8?auto=format&fit=crop&w=400&q=80",
-    "https://images.unsplash.com/photo-1512418490979-9ce9884e3b7b?auto=format&fit=crop&w=400&q=80",
-    "https://images.unsplash.com/photo-1530893609608-31a19eae81eb?auto=format&fit=crop&w=400&q=80"
+    "https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=600&q=80",
+    "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=600&q=80",
+    "https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?auto=format&fit=crop&w=600&q=80"
   ]
 };
 
