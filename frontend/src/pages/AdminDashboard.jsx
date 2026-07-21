@@ -162,8 +162,8 @@ const AdminDashboard = ({
           return (
             <>
               {/* Supplier & Offer Filter Tabs */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '1.25rem', borderBottom: '1px solid var(--border-light)', paddingBottom: '1rem' }}>
-                <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+              <div className="admin-filter-bar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '1.25rem', borderBottom: '1px solid var(--border-light)', paddingBottom: '1rem' }}>
+                <div className="admin-tabs-scroll" style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
                   {['Todos', 'Mercado Libre', 'AliExpress', 'Amazon', 'Banggood', 'CJ Dropshipping', 'Temu', 'eBay', 'Walmart'].map(provider => (
                     <button
                       key={provider}
@@ -179,7 +179,8 @@ const AdminDashboard = ({
                         color: bulkSupplierFilter === provider ? 'var(--accent-cyan)' : 'var(--text-muted)',
                         cursor: 'pointer',
                         transition: 'all 0.2s ease',
-                        fontWeight: bulkSupplierFilter === provider ? 'bold' : 'normal'
+                        fontWeight: bulkSupplierFilter === provider ? 'bold' : 'normal',
+                        whiteSpace: 'nowrap'
                       }}
                     >
                       {provider} ({
@@ -198,7 +199,7 @@ const AdminDashboard = ({
                 </div>
 
                 {/* Offer Toggle & Sort Options */}
-                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                <div className="admin-deals-sort-wrap" style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
                   <button
                     type="button"
                     onClick={() => setOnlyDealsFilter(prev => !prev)}
@@ -214,10 +215,11 @@ const AdminDashboard = ({
                       display: 'flex',
                       alignItems: 'center',
                       gap: '0.3rem',
-                      transition: 'all 0.2s ease'
+                      transition: 'all 0.2s ease',
+                      whiteSpace: 'nowrap'
                     }}
                   >
-                    🔥 Solo Ofertas y Descuentos ({dealsCount})
+                    🔥 Solo Ofertas ({dealsCount})
                   </button>
 
                   <select
@@ -347,7 +349,7 @@ const AdminDashboard = ({
               
               <div style={{ background: 'rgba(6,182,212,0.03)', padding: '1rem', border: '1px dashed var(--border-glow)', borderRadius: '10px', marginBottom: '1.5rem' }}>
                 <label className="form-label" style={{ color: 'var(--accent-cyan)', fontWeight: 'bold' }}>⚡ Cargar por Enlace (AliExpress/Amazon/Alibaba)</label>
-                <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
+                <div className="supplier-link-box" style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
                   <input 
                     type="text" 
                     className="form-input" 
