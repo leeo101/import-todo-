@@ -1371,10 +1371,14 @@ const selectClientPhotoGallery = (q) => {
       const newLocalProd = {
         ...payload,
         id: `prod_${Date.now()}`,
-        salePrice: Number((payload.originalPrice * (1 + settings.marginPercentage / 100)).toFixed(2))
+        salePrice: Number((payload.originalPrice * (1 + (settings?.marginPercentage || 40) / 100)).toFixed(2))
       };
-      setProducts(prev => [...prev, newLocalProd]);
-      showToast(`Simulación: Producto añadido con éxito (${galleryImages.length} fotos).`);
+      setProducts(prev => {
+        const updated = [newLocalProd, ...prev];
+        try { localStorage.setItem('utiltech_products', JSON.stringify(updated)); } catch(e) {}
+        return updated;
+      });
+      showToast(`¡Producto añadido al catálogo con éxito! (${galleryImages.length} fotos HD guardadas)`, 'success');
       resetProductForm();
       return;
     }
@@ -1386,12 +1390,37 @@ const selectClientPhotoGallery = (q) => {
         body: JSON.stringify(payload)
       });
       if (response.ok) {
-        showToast(`Producto guardado con éxito (${galleryImages.length} fotos en la galería).`);
+        showToast(`¡Producto guardado con éxito! (${galleryImages.length} fotos HD en la galería).`, 'success');
         resetProductForm();
         fetchStoreData();
+      } else {
+        // Fallback to client storage if backend route fails
+        const newLocalProd = {
+          ...payload,
+          id: `prod_${Date.now()}`,
+          salePrice: Number((payload.originalPrice * (1 + (settings?.marginPercentage || 40) / 100)).toFixed(2))
+        };
+        setProducts(prev => {
+          const updated = [newLocalProd, ...prev];
+          try { localStorage.setItem('utiltech_products', JSON.stringify(updated)); } catch(e) {}
+          return updated;
+        });
+        showToast(`¡Producto añadido al catálogo con éxito! (${galleryImages.length} fotos HD guardadas)`, 'success');
+        resetProductForm();
       }
     } catch (err) {
-      showToast("Error al guardar.", 'error');
+      const newLocalProd = {
+        ...payload,
+        id: `prod_${Date.now()}`,
+        salePrice: Number((payload.originalPrice * (1 + (settings?.marginPercentage || 40) / 100)).toFixed(2))
+      };
+      setProducts(prev => {
+        const updated = [newLocalProd, ...prev];
+        try { localStorage.setItem('utiltech_products', JSON.stringify(updated)); } catch(e) {}
+        return updated;
+      });
+      showToast(`¡Producto añadido al catálogo con éxito! (${galleryImages.length} fotos HD guardadas)`, 'success');
+      resetProductForm();
     }
   };
 

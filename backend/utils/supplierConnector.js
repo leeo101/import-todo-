@@ -837,7 +837,7 @@ const searchAliExpress = async (query) => {
   const rapidApiKey = process.env.RAPIDAPI_KEY;
 
   // 1. Try official AliExpress Open Platform (TOP API) with authenticated signature
-  if (appKey && appSecret && !appSecret.includes('tu_clave')) {
+  if (appKey && appSecret && appKey !== '540142' && !appSecret.includes('tu_clave') && !appSecret.includes('rSpFw9CdwltP9rZiNC6aubJ38oJb1GA5')) {
     try {
       const translatedQuery = translateToEnglish(query);
       console.log(`[ALIEXPRESS OFFICIAL TOP API] Consultando API Oficial (AppKey ${appKey}): ${translatedQuery}`);
