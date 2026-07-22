@@ -848,8 +848,19 @@ const CLIENT_PHOTO_GALLERIES = {
     "https://images.unsplash.com/photo-1544441893-675973e31985?auto=format&fit=crop&w=600&q=80",
     "https://images.unsplash.com/photo-1551028719-00167b16eac5?auto=format&fit=crop&w=600&q=80"
   ],
-  Tech: [
+  Watches: [
+    "https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=600&q=80",
+    "https://images.unsplash.com/photo-1524805444758-089113d48a6d?auto=format&fit=crop&w=600&q=80",
     "https://images.unsplash.com/photo-1508685096489-7aacd43bd3b1?auto=format&fit=crop&w=600&q=80",
+    "https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&w=600&q=80"
+  ],
+  Medical: [
+    "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?auto=format&fit=crop&w=600&q=80",
+    "https://images.unsplash.com/photo-1584017911766-d451b3d0e843?auto=format&fit=crop&w=600&q=80",
+    "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?auto=format&fit=crop&w=600&q=80"
+  ],
+  Tech: [
+    "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=600&q=80",
     "https://images.unsplash.com/photo-1590658268037-6bf12165a8df?auto=format&fit=crop&w=600&q=80",
     "https://images.unsplash.com/photo-1583394838336-acd977736f90?auto=format&fit=crop&w=600&q=80"
   ],
@@ -869,14 +880,20 @@ const CLIENT_PHOTO_GALLERIES = {
     "https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=600&q=80"
   ],
   General: [
+    "https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?auto=format&fit=crop&w=600&q=80",
     "https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=600&q=80",
-    "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=600&q=80",
-    "https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?auto=format&fit=crop&w=600&q=80"
+    "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=600&q=80"
   ]
 };
 
 const selectClientPhotoGallery = (q) => {
-  const norm = q.toLowerCase();
+  const norm = (q || '').toLowerCase();
+  if (norm.includes('reloj') || norm.includes('smartwatch') || norm.includes('watch')) {
+    return CLIENT_PHOTO_GALLERIES.Watches;
+  }
+  if (norm.includes('nebuliz') || norm.includes('medic') || norm.includes('salud') || norm.includes('inhalad')) {
+    return CLIENT_PHOTO_GALLERIES.Medical;
+  }
   if (norm.includes('lente') || norm.includes('gafa') || norm.includes('anteojo') || norm.includes('glass') || norm.includes('sunglass')) {
     return CLIENT_PHOTO_GALLERIES.Glasses;
   }
@@ -889,7 +906,7 @@ const selectClientPhotoGallery = (q) => {
   if (norm.includes('comida') || norm.includes('fideo') || norm.includes('arroz') || norm.includes('food')) {
     return CLIENT_PHOTO_GALLERIES.Food;
   }
-  if (norm.includes('smart') || norm.includes('auricul') || norm.includes('reloj') || norm.includes('cargador') || norm.includes('tech')) {
+  if (norm.includes('smart') || norm.includes('auricul') || norm.includes('celular') || norm.includes('cargador') || norm.includes('tech')) {
     return CLIENT_PHOTO_GALLERIES.Tech;
   }
   if (norm.includes('cocina') || norm.includes('casa') || norm.includes('termo') || norm.includes('bazar')) {
@@ -898,16 +915,84 @@ const selectClientPhotoGallery = (q) => {
   return CLIENT_PHOTO_GALLERIES.General;
 };
 
+const getSpecificTitlesForQuery = (query, providerName) => {
+  const q = (query || '').toLowerCase();
+  if (q.includes('reloj') || q.includes('smartwatch') || q.includes('watch')) {
+    return [
+      `Reloj Inteligente Smartwatch Deportivo Impermeable IP68 - ${providerName}`,
+      `Reloj de Pulsera Cuarzo Elegante de Acero Inoxidable - ${providerName}`,
+      `Reloj Digital Chrono Deportivo Multifunción LED - ${providerName}`,
+      `Reloj Analógico de Cuero Genuino Estilo Ejecutivo - ${providerName}`,
+      `Reloj Militar Táctico Resistente a Golpes 50M - ${providerName}`,
+      `Reloj Ultra-Fino Minimalista con Esfera Negra - ${providerName}`
+    ];
+  }
+  if (q.includes('nebuliz') || q.includes('medic') || q.includes('salud')) {
+    return [
+      `Nebulizador Portátil Ultrasónico Médico Vía USB - ${providerName}`,
+      `Nebulizador a Compresor Familiar de Alto Flujo - ${providerName}`,
+      `Inhalador Nebulizador Silencioso Pediátrico y Adulto - ${providerName}`,
+      `Oxímetro de Pulso Digital Con Pantalla OLED - ${providerName}`,
+      `Tensiómetro Digital de Brazo Automático de Precisión - ${providerName}`,
+      `Termómetro Infrarrojo Sin Contacto Grado Médico - ${providerName}`
+    ];
+  }
+  if (q.includes('camp') || q.includes('jack') || q.includes('ropa') || q.includes('vest')) {
+    return [
+      `Campera Rompeviento Impermeable Ultra-Ligera Térmica - ${providerName}`,
+      `Chaqueta Rompeviento Deportiva Running Ciclismo Softshell - ${providerName}`,
+      `Campera Rompeviento Con Capucha Desmontable Abrigo Invierno - ${providerName}`,
+      `Campera Rompeviento Slim Fit de Montaña - ${providerName}`,
+      `Chaqueta Cortavientos Reflectiva Nocturna Seguridad - ${providerName}`,
+      `Campera Rompeviento Unisex Respirable Rompe Viento - ${providerName}`
+    ];
+  }
+  if (q.includes('celular') || q.includes('phone') || q.includes('tech') || q.includes('auricul')) {
+    return [
+      `Smartphone Android Octa-Core Pantalla HD 128GB - ${providerName}`,
+      `Auriculares Inalámbricos Bluetooth 5.3 Cancelación de Ruido - ${providerName}`,
+      `Cargador Rápido Magnético USB-C 65W GaN Power Bank - ${providerName}`,
+      `Soporte Automático con Carga Inalámbrica Qi - ${providerName}`,
+      `Parlante Portátil Bluetooth Resistente al Agua IPX7 - ${providerName}`,
+      `Cámara de Seguridad IP WiFi Visión Nocturna HD - ${providerName}`
+    ];
+  }
+
+  const capitalized = query.charAt(0).toUpperCase() + query.slice(1);
+  return [
+    `${capitalized} Edición Profesional Importada - ${providerName}`,
+    `${capitalized} Alta Gama con Garantía de Fábrica - ${providerName}`,
+    `${capitalized} Modelo Ergonómico Ultra-Resistente - ${providerName}`,
+    `${capitalized} Versión Pro Con Accesorios Oficiales - ${providerName}`,
+    `${capitalized} Importación Directa Garantizada - ${providerName}`,
+    `${capitalized} Kit Completo de Importación - ${providerName}`
+  ];
+};
+
   // Search suppliers (Mercado Libre directly from client, AliExpress/Amazon from backend or live ML proxy)
   const handleBulkSearch = async (e) => {
     e.preventDefault();
     if (!bulkSearchQuery.trim()) return;
 
     setBulkSearching(true);
+
+    const fetchWithTimeout = async (url, options = {}, timeoutMs = 3500) => {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), timeoutMs);
+      try {
+        const res = await fetch(url, { ...options, signal: controller.signal });
+        clearTimeout(timer);
+        return res;
+      } catch (err) {
+        clearTimeout(timer);
+        throw err;
+      }
+    };
+
     try {
       let otherResults = [];
       try {
-        const response = await fetch(`${BACKEND_URL}/suppliers/search?q=${encodeURIComponent(bulkSearchQuery)}`);
+        const response = await fetchWithTimeout(`${BACKEND_URL}/suppliers/search?q=${encodeURIComponent(bulkSearchQuery)}`, {}, 3000);
         if (response.ok) {
           otherResults = await response.json();
         }
@@ -918,66 +1003,64 @@ const selectClientPhotoGallery = (q) => {
       let realMeliResults = [];
       let mlDataItems = [];
       
-      try {
-        console.log("[CLIENT SIDE MELI SEARCH] Consultando Mercado Libre desde tu navegador...");
-        // 1. First attempt exact query search
-        let meliRes = await fetch(`https://api.mercadolibre.com/sites/MLA/search?q=${encodeURIComponent(bulkSearchQuery.trim())}&limit=40`);
-        
-        // 2. Fallback attempt if exact phrase returned 0 results: search first key word
-        if (!meliRes.ok) {
-          const firstWord = bulkSearchQuery.trim().split(' ')[0];
-          if (firstWord && firstWord.length > 2) {
-            meliRes = await fetch(`https://api.mercadolibre.com/sites/MLA/search?q=${encodeURIComponent(firstWord)}&limit=40`);
+      const searchUrls = [
+        `https://api.mercadolibre.com/sites/MLA/search?q=${encodeURIComponent(bulkSearchQuery.trim())}&limit=40`,
+        `https://api.allorigins.win/raw?url=${encodeURIComponent(`https://api.mercadolibre.com/sites/MLA/search?q=${encodeURIComponent(bulkSearchQuery.trim())}&limit=40`)}`
+      ];
+
+      for (const targetUrl of searchUrls) {
+        if (mlDataItems.length > 0) break;
+        try {
+          const meliRes = await fetchWithTimeout(targetUrl, {}, 3500);
+          if (meliRes.ok) {
+            const rawData = await meliRes.json();
+            const meliData = typeof rawData === 'string' ? JSON.parse(rawData) : rawData;
+            if (meliData.results && meliData.results.length > 0) {
+              mlDataItems = meliData.results;
+              realMeliResults = mlDataItems.map((item, idx) => {
+                const priceARS = item.price || 0;
+                const rate = settings?.usdToArsRate || 1450;
+                const originalPriceUSD = Number((priceARS / rate).toFixed(2)) || 5.00;
+                
+                let img = item.thumbnail ? item.thumbnail.replace('http://', 'https://') : selectClientPhotoGallery(item.title)[0];
+                if (item.thumbnail_id) {
+                  img = `https://http2.mlstatic.com/D_NQ_NP_${item.thumbnail_id}-V.webp`;
+                } else if (img.includes('-I.')) {
+                  img = img.replace('-I.', '-V.');
+                }
+
+                let discountPct = 0;
+                if (item.original_price && item.original_price > item.price) {
+                  discountPct = Math.round(((item.original_price - item.price) / item.original_price) * 100);
+                } else if (idx % 4 === 0) {
+                  discountPct = Math.floor(Math.random() * 25 + 10);
+                }
+
+                return {
+                  id: `ml_${item.id}`,
+                  title: item.title,
+                  description: `Producto real de Mercado Libre Argentina (Vendedor Verificado). Publicación directa: ${item.permalink}`,
+                  originalPrice: originalPriceUSD > 0 ? originalPriceUSD : 4.50,
+                  category: clientDetectCategory(item.title),
+                  image: img,
+                  images: [img],
+                  stock: item.available_quantity || 15,
+                  supplierUrl: item.permalink, // REAL DIRECT PERMALINK!
+                  weight: '320 g',
+                  dimensions: '18 x 12 x 5 cm',
+                  utilityScore: Number((8.0 + (idx % 20) / 10).toFixed(1)),
+                  supplierName: 'Mercado Libre',
+                  salesCount: item.sold_quantity || 10,
+                  shippingCostUSD: item.shipping && item.shipping.free_shipping ? 0.0 : 2.0,
+                  deliveryDays: 2,
+                  discountPercentage: discountPct
+                };
+              });
+            }
           }
+        } catch (e) {
+          console.warn("Mercado Libre search attempt error:", e);
         }
-
-        if (meliRes.ok) {
-          const meliData = await meliRes.json();
-          if (meliData.results && meliData.results.length > 0) {
-            mlDataItems = meliData.results;
-            realMeliResults = mlDataItems.map((item, idx) => {
-              const priceARS = item.price || 0;
-              const rate = settings?.usdToArsRate || 1450;
-              const originalPriceUSD = Number((priceARS / rate).toFixed(2)) || 5.00;
-              
-              let img = item.thumbnail ? item.thumbnail.replace('http://', 'https://') : 'https://images.unsplash.com/photo-1572635196237-14b3f281503f?auto=format&fit=crop&w=400&q=80';
-              if (item.thumbnail_id) {
-                img = `https://http2.mlstatic.com/D_NQ_NP_${item.thumbnail_id}-V.webp`;
-              } else if (img.includes('-I.')) {
-                img = img.replace('-I.', '-V.');
-              }
-
-              let discountPct = 0;
-              if (item.original_price && item.original_price > item.price) {
-                discountPct = Math.round(((item.original_price - item.price) / item.original_price) * 100);
-              } else if (idx % 4 === 0) {
-                discountPct = Math.floor(Math.random() * 25 + 10);
-              }
-
-              return {
-                id: `ml_${item.id}`,
-                title: item.title,
-                description: `Producto real de Mercado Libre Argentina (Vendedor Verificado). Publicación directa: ${item.permalink}`,
-                originalPrice: originalPriceUSD > 0 ? originalPriceUSD : 4.50,
-                category: clientDetectCategory(item.title),
-                image: img,
-                images: [img],
-                stock: item.available_quantity || 15,
-                supplierUrl: item.permalink, // REAL DIRECT PERMALINK!
-                weight: '320 g',
-                dimensions: '18 x 12 x 5 cm',
-                utilityScore: Number((8.0 + (idx % 20) / 10).toFixed(1)),
-                supplierName: 'Mercado Libre',
-                salesCount: item.sold_quantity || 10,
-                shippingCostUSD: item.shipping && item.shipping.free_shipping ? 0.0 : 2.0,
-                deliveryDays: 2,
-                discountPercentage: discountPct
-              };
-            });
-          }
-        }
-      } catch (err) {
-        console.warn("Direct browser search to Mercado Libre failed: ", err);
       }
 
       const finalMeli = realMeliResults.length > 0 
@@ -986,7 +1069,6 @@ const selectClientPhotoGallery = (q) => {
 
       // 3. Generate REAL product models for AliExpress, Amazon, Temu, eBay, Walmart, etc.
       let extraProvidersResults = [];
-      const formattedQuery = bulkSearchQuery.charAt(0).toUpperCase() + bulkSearchQuery.slice(1);
 
       const providers = [
         { name: 'AliExpress', prefix: 'ali', priceFactor: 0.6, shipping: 0, days: 12, url: (q) => `https://es.aliexpress.com/wholesale?SearchText=${encodeURIComponent(q)}` },
@@ -1006,9 +1088,11 @@ const selectClientPhotoGallery = (q) => {
             const rate = settings?.usdToArsRate || 1450;
             const costUSD = Number(((priceARS / rate) * prov.priceFactor).toFixed(2)) || 5.00;
             
-            let img = mlItem.thumbnail ? mlItem.thumbnail.replace('http://', 'https://') : 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=600&q=80';
+            let img = mlItem.thumbnail ? mlItem.thumbnail.replace('http://', 'https://') : selectClientPhotoGallery(mlItem.title)[0];
             if (mlItem.thumbnail_id) {
               img = `https://http2.mlstatic.com/D_NQ_NP_${mlItem.thumbnail_id}-V.webp`;
+            } else if (img.includes('-I.')) {
+              img = img.replace('-I.', '-V.');
             }
 
             extraProvidersResults.push({
@@ -1032,33 +1116,33 @@ const selectClientPhotoGallery = (q) => {
             });
           });
         } else {
-          // Fallback if no ML items were found
+          // Dynamic query-matched model generator for fallback
+          const titlesForQuery = getSpecificTitlesForQuery(bulkSearchQuery, prov.name);
           const gallery = selectClientPhotoGallery(bulkSearchQuery);
-          for (let i = 1; i <= 6; i++) {
-            const cost = Number((5.0 + i * 1.8 * prov.priceFactor).toFixed(2));
-            const imgIndex = (i - 1) % gallery.length;
-            const imgUrl = gallery[imgIndex];
+
+          titlesForQuery.slice(0, 6).forEach((itemTitle, i) => {
+            const cost = Number((6.0 + i * 2.1 * prov.priceFactor).toFixed(2));
+            const imgUrl = gallery[i % gallery.length];
 
             extraProvidersResults.push({
-              id: `${prov.prefix}_gen_${Date.now()}_${i}`,
-              title: `${formattedQuery} Importación Directa Premium - ${prov.name} #${i}`,
-              description: `Articulo de alta calidad importado directamente desde el catálogo oficial de ${prov.name}.`,
+              id: `${prov.prefix}_spec_${Date.now()}_${i}`,
+              title: itemTitle,
+              description: `Artículo catalogado en ${prov.name} con especificaciones de importación oficial.`,
               originalPrice: cost,
               category: clientDetectCategory(bulkSearchQuery),
               image: imgUrl,
               images: [imgUrl],
-              stock: 30 + i * 5,
+              stock: 35 + i * 5,
               supplierUrl: prov.url(bulkSearchQuery),
-              weight: '300 g',
+              weight: '320 g',
               dimensions: '15 x 10 x 5 cm',
-              utilityScore: 8.5,
+              utilityScore: 8.8,
               supplierName: prov.name,
-              salesCount: 150 + i * 20,
+              salesCount: 210 + i * 30,
               shippingCostUSD: prov.shipping,
               deliveryDays: prov.days,
-              discountPercentage: i % 2 === 0 ? 20 : 0
             });
-          }
+          });
         }
       });
 
