@@ -3,7 +3,8 @@ const fs = require('fs');
 const sqlite3 = require('sqlite3');
 const { open } = require('sqlite');
 
-const dbPath = path.join(__dirname, '..', 'data', 'utiltech.db');
+const isVercel = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME;
+const dbPath = isVercel ? path.join('/tmp', 'utiltech.db') : path.join(__dirname, '..', 'data', 'utiltech.db');
 const productsJsonPath = path.join(__dirname, '..', 'data', 'products.json');
 const usersJsonPath = path.join(__dirname, '..', 'data', 'users.json');
 const ordersJsonPath = path.join(__dirname, '..', 'data', 'orders.json');

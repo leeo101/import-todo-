@@ -6,10 +6,7 @@ export const useAuth = () => useContext(AuthContext);
 
 const getBackendUrl = () => {
   if (import.meta.env && import.meta.env.VITE_BACKEND_URL) return import.meta.env.VITE_BACKEND_URL;
-  if (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
-    return '/api';
-  }
-  return 'http://localhost:5000/api';
+  return '/api';
 };
 const BACKEND_URL = getBackendUrl();
 

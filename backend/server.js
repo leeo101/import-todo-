@@ -866,10 +866,12 @@ initializeDatabase().then(async () => {
       await db.run('INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)', 'usdToArsRate', '1450');
     } catch (e) {}
   }
+});
 
+if (require.main === module) {
   app.listen(PORT, () => {
     console.log(`ImportTodo API server running on http://localhost:${PORT}`);
   });
-}).catch(err => {
-  console.error('SQLite database initialization crashed:', err);
-});
+}
+
+module.exports = app;
